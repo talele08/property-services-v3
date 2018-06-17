@@ -1,8 +1,14 @@
 package org.egov.pt.web.models;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
 import org.springframework.validation.annotation.Validated;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -12,7 +18,6 @@ import javax.validation.constraints.Size;
  * Address
  */
 @Validated
-
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,60 +25,61 @@ import javax.validation.constraints.Size;
 @Builder
 public class Address   {
 
-    @JsonProperty("id")
-    private String id;
+        @JsonProperty("id")
+        private String id;
 
-    @JsonProperty("tenantId")
-    private String tenantId;
+        @JsonProperty("tenantId")
+        private String tenantId;
 
-    @JsonProperty("latitude")
-    private Double latitude;
+        @JsonProperty("latitude")
+        private Double latitude;
 
-    @JsonProperty("longitude")
-    private Double longitude;
+        @JsonProperty("longitude")
+        private Double longitude;
 
-    @JsonProperty("addressId")
-    private String addressId;
+        @JsonProperty("addressId")
+        private String addressId;
 
-    @JsonProperty("addressNumber")
-    private String addressNumber;
+        @JsonProperty("addressNumber")
+        private String addressNumber;
 
-    @JsonProperty("type")
-    private String type;
+        @JsonProperty("type")
+        private String type;
 
-    @NotNull
-    @Size(max = 256)
-    @JsonProperty("addressLine1")
-    private String addressLine1;
+        @Size(max=256)
+        @JsonProperty("addressLine1")
+        private String addressLine1;
 
-    @Size(max = 256)
-    @JsonProperty("addressLine2")
-    private String addressLine2;
+        @Size(max=256)
+        @JsonProperty("addressLine2")
+        private String addressLine2;
 
-    @JsonProperty("landmark")
-    private String landmark;
+        @JsonProperty("landmark")
+        private String landmark;
 
-    @NotNull
-    @JsonProperty("city")
-    private String city;
+        @NotNull
+        @JsonProperty("doorNo")
+        private String doorNo;
 
-    @JsonProperty("pincode")
-    private String pincode;
+        @NotNull
+        @JsonProperty("city")
+        private String city;
 
-    @JsonProperty("detail")
-    private String detail;
+        @JsonProperty("pincode")
+        private String pincode;
 
-    @Size(min = 2, max = 64)
-    @JsonProperty("buildingName")
-    private String buildingName;
+        @JsonProperty("detail")
+        private String detail;
 
-    @Size(min = 2, max = 64)
-    @JsonProperty("street")
-    private String street;
+        @JsonProperty("buildingName")
+        private String buildingName;
 
-    @Valid
-    @JsonProperty("locality")
-    private Boundary locality;
+        @JsonProperty("street")
+        private String street;
+
+        @Valid
+        @JsonProperty("locality")
+        private Boundary locality;
 
 
 }

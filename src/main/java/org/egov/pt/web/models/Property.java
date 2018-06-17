@@ -1,14 +1,27 @@
 package org.egov.pt.web.models;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+import org.springframework.validation.annotation.Validated;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.*;
-import org.springframework.validation.annotation.Validated;
 
-import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Property
@@ -25,6 +38,9 @@ public class Property extends PropertyInfo{
 
 	@JsonProperty("auditDetails")
 	private AuditDetails auditDetails;
+
+	@JsonProperty("accountId")
+	private String accountId;
 
 
 	public enum CreationReasonEnum {
@@ -63,36 +79,29 @@ public class Property extends PropertyInfo{
 
 	@Valid
 	@JsonProperty("propertyDetails")
-	private Set<PropertyDetail> propertyDetails;
+	private List<PropertyDetail> propertyDetails;
 
-
-	public Property(PropertyBuilder builder) {
-		super(builder.propertyId, builder.tenantId, builder.acknowldgementNumber, builder.oldPropertyId, builder.status, builder.address);
-		this.auditDetails = builder.auditDetails;
-		this.creationReason = builder.creationReason;
-		this.occupancyDate = builder.occupancyDate;
-		this.propertyDetails = builder.propertyDetails;
-	}
-
-
-	public static PropertyBuilder builder() {
-		return new PropertyBuilder();
-	}
 
 	public Property addpropertyDetailsItem(PropertyDetail propertyDetailsItem) {
 		if (this.propertyDetails == null) {
-			this.propertyDetails = new HashSet<>();
+			this.propertyDetails = new ArrayList<>();
 		}
 		this.propertyDetails.add(propertyDetailsItem);
 		return this;
+	}
+
+
+	public static PropertyBuilder builder(){
+		return new PropertyBuilder();
 	}
 
     public static class PropertyBuilder{
 
 		private CreationReasonEnum creationReason;
 		private Long occupancyDate;
-		private Set<PropertyDetail> propertyDetails;
+		private List<PropertyDetail>  propertyDetails;
 		private AuditDetails auditDetails;
+		private String accountId;
 
 		private String propertyId;
 		private String tenantId;
@@ -113,7 +122,7 @@ public class Property extends PropertyInfo{
 			return this;
 		}
 
-		public PropertyBuilder propertyDetail(Set<PropertyDetail> propertyDetails) {
+		public PropertyBuilder propertyDetail( List<PropertyDetail> propertyDetails){
 			this.propertyDetails=propertyDetails;
 			return this;
 		}
@@ -125,6 +134,11 @@ public class Property extends PropertyInfo{
 
 		public PropertyBuilder propertyId(String propertyId){
 			this.propertyId =propertyId ;
+			return this;
+		}
+
+		public PropertyBuilder accountId(String accountId){
+			this.accountId =accountId ;
 			return this;
 		}
 
@@ -160,4 +174,13 @@ public class Property extends PropertyInfo{
 
 	}
 
+
+	public Property(PropertyBuilder builder) {
+		super(builder.propertyId,builder.tenantId,builder.acknowldgementNumber,builder.oldPropertyId,builder.status,builder.address);
+		this.auditDetails = builder.auditDetails;
+		this.creationReason = builder.creationReason;
+		this.occupancyDate = builder.occupancyDate;
+		this.propertyDetails = builder.propertyDetails;
+		this.accountId=builder.accountId;
+	}
 }

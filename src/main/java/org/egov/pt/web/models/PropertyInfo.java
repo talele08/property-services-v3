@@ -1,17 +1,20 @@
 package org.egov.pt.web.models;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.Valid;
+
+import lombok.*;
+import org.springframework.validation.annotation.Validated;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.annotations.ApiModel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.validation.annotation.Validated;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Size;
+import io.swagger.annotations.ApiModel;
 
 /**
  * This is lightweight property object that can be used as reference by definitions needing property linking. Actual Property Object extends this to include more elaborate attributes of the property.
@@ -24,31 +27,27 @@ import javax.validation.constraints.Size;
 @Setter
 @NoArgsConstructor
 //@Builder
-@EqualsAndHashCode(of= {"propertyId","tenantId"})
-public class PropertyInfo   {
+    @EqualsAndHashCode(of= {"propertyId","tenantId"})
+    public class PropertyInfo   {
 
-    @Size(min = 1, max = 64)
     @JsonProperty("propertyId")
     public String propertyId;
 
-    @Size(min = 2, max = 256)
     @JsonProperty("tenantId")
     public String tenantId;
 
-    @Size(min = 1, max = 64)
     @JsonProperty("acknowldgementNumber")
     public String acknowldgementNumber;
 
-    @Size(min = 1, max = 256)
     @JsonProperty("oldPropertyId")
     public String oldPropertyId;
 
               /**
    * status of the Property
    */
-  public enum StatusEnum {
+    public enum StatusEnum {
     ACTIVE("ACTIVE"),
-    
+
     INACTIVE("INACTIVE");
 
     private String value;
@@ -72,10 +71,10 @@ public class PropertyInfo   {
       }
       return null;
     }
-  }
+    }
 
-        @JsonProperty("status")
-        public StatusEnum status;
+    @JsonProperty("status")
+    public StatusEnum status;
 
     @Valid
     @JsonProperty("address")

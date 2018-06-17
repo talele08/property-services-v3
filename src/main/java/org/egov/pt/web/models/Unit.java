@@ -1,11 +1,24 @@
 package org.egov.pt.web.models;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.validation.Valid;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.Size;
-import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Unit
@@ -23,49 +36,39 @@ public class Unit   {
         @JsonProperty("id")
         private String id;
 
-        @Size(min = 2, max = 256)
         @JsonProperty("tenantId")
         private String tenantId;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("floorNo")
         private String floorNo;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("unitType")
         private String unitType;
 
         @JsonProperty("unitArea")
         private Float unitArea;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("usageCategoryMajor")
         private String usageCategoryMajor;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("usageCategoryMinor")
         private String usageCategoryMinor;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("usageCategorySubMinor")
         private String usageCategorySubMinor;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("usageCategoryDetail")
         private String usageCategoryDetail;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("occupancyType")
         private String occupancyType;
 
         @JsonProperty("occupancyDate")
         private Long occupancyDate;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("constructionType")
         private String constructionType;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("constructionSubType")
         private String constructionSubType;
 

@@ -26,7 +26,7 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 		Map<String, Property> propertyMap = new HashMap<>();
 
 		while (rs.next()) {
-			
+
 			String currentId = rs.getString("propertyid");
 			Property currentProperty = propertyMap.get(currentId);
 			String tenanId = rs.getString("tenantId");
@@ -79,25 +79,28 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 					detail = propertyDetail;
 					break;
 				}
-			 }
+			}
 		}
-         if(detail==null) {
-			 detail = PropertyDetail.builder()
-					 .additionalDetails(rs.getObject("additionalDetails")).buildUpArea(rs.getFloat("buildUpArea"))
-					 .channel(ChannelEnum.fromValue(rs.getString("channel"))).landArea(rs.getFloat("landArea"))
-					 .noOfFloors(rs.getLong("noOfFloors")).source(SourceEnum.fromValue(rs.getString("source")))
-					 .usage(rs.getString("usage")).assessmentDate(rs.getLong("assessmentDate"))
-					 .assessmentNumber(rs.getString("assessmentNumber")).financialYear(rs.getString("financialYear"))
-					 .propertyType(rs.getString("propertyType")).propertySubType(rs.getString("propertySubType"))
-					 .usageCategoryMajor(rs.getString("usageCategoryMajor"))
-					 .build();
-			 property.addpropertyDetailsItem(detail);
+		if(detail==null) {
+			detail = PropertyDetail.builder()
+					.additionalDetails(rs.getObject("additionalDetails")).buildUpArea(rs.getFloat("buildUpArea"))
+					.channel(ChannelEnum.fromValue(rs.getString("channel"))).landArea(rs.getFloat("landArea"))
+					.noOfFloors(rs.getLong("noOfFloors")).source(SourceEnum.fromValue(rs.getString("source")))
+					.usage(rs.getString("usage")).assessmentDate(rs.getLong("assessmentDate"))
+					.assessmentNumber(rs.getString("assessmentNumber")).financialYear(rs.getString("financialYear"))
+					.propertyType(rs.getString("propertyType")).propertySubType(rs.getString("propertySubType"))
+					.usageCategoryMajor(rs.getString("usageCategoryMajor"))
+					.build();
+			property.addpropertyDetailsItem(detail);
 		}
-
 
 		String tenantId = property.getTenantId();
 
-		OwnerInfo owner = OwnerInfo.builder().id(rs.getLong("userid")).build();
+		OwnerInfo owner = OwnerInfo.builder().uuid(rs.getString("userid"))
+				          .isPrimaryOwner(rs.getBoolean("isPrimaryOwner"))
+				          .ownerType(rs.getString("ownerType"))
+				          .ownerShipPercentage(rs.getDouble("ownerShipPercentage"))
+				          .build();
 		Document document = Document.builder().id(rs.getString("documentid")).documentType(rs.getString("documentType"))
 				.fileStore(rs.getString("fileStore")).build();
 		Unit unit = Unit.builder().id(rs.getString("unitid")).floorNo(rs.getString("floorNo")).tenantId(tenantId)

@@ -5,13 +5,17 @@ import org.egov.mdms.model.MasterDetail;
 import org.egov.mdms.model.MdmsCriteria;
 import org.egov.mdms.model.MdmsCriteriaReq;
 import org.egov.mdms.model.ModuleDetail;
-import org.egov.pt.web.models.*;
+import org.egov.pt.web.models.AuditDetails;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Component
 public class PropertyUtil {
+
+
 
 
     /**
@@ -29,7 +33,7 @@ public class PropertyUtil {
             return AuditDetails.builder().lastModifiedBy(by).lastModifiedTime(time).build();
     }
 
-    public MdmsCriteriaReq prepareMdMsRequest(String tenantId, List<String> names, RequestInfo requestInfo) {
+    public MdmsCriteriaReq prepareMdMsRequestForCodes(String tenantId, List<String> names, RequestInfo requestInfo) {
 
         List<MasterDetail> masterDetails = new ArrayList<>();
         MasterDetail masterDetail;
@@ -45,11 +49,6 @@ public class PropertyUtil {
         MdmsCriteria mdmsCriteria = MdmsCriteria.builder().tenantId(tenantId).moduleDetails(moduleDetails).build();
         return MdmsCriteriaReq.builder().requestInfo(requestInfo).mdmsCriteria(mdmsCriteria).build();
     }
-
-
-
-
-
 
 
 }

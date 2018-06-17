@@ -1,13 +1,20 @@
 package org.egov.pt.web.models;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
-import org.springframework.validation.annotation.Validated;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.springframework.validation.annotation.Validated;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Boundary
@@ -21,9 +28,9 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class Boundary   {
-    @NotNull
-    @JsonProperty("code")
-    private String code;
+        @NotNull
+        @JsonProperty("code")
+        private String code;
 
         @JsonProperty("name")
         private String name;

@@ -1,16 +1,24 @@
 package org.egov.pt.web.models;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.*;
-import org.springframework.validation.annotation.Validated;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.util.HashSet;
-import java.util.Set;
+
+import org.springframework.validation.annotation.Validated;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * PropertyDetail
@@ -23,7 +31,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@EqualsAndHashCode(of = {"assessmentNumber"})
+@EqualsAndHashCode
 public class PropertyDetail   {
        /* @JsonProperty("id")
         private String id;*/
@@ -76,6 +84,8 @@ public class PropertyDetail   {
 
         @JsonProperty("units")
         @Valid
+        @NotNull
+        @Size(min=1)
         private Set<Unit> units;
 
         @JsonProperty("documents")
@@ -88,24 +98,23 @@ public class PropertyDetail   {
         @JsonProperty("financialYear")
         private String financialYear;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("propertyType")
         private String propertyType;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("propertySubType")
         private String propertySubType;
 
-        @Size(min = 2, max = 256)
         @JsonProperty("assessmentNumber")
         private String assessmentNumber;
 
-            @JsonProperty("assessmentDate")
-            private Long assessmentDate;
+        @JsonProperty("assessmentDate")
+        private Long assessmentDate;
 
-        @Size(min = 1, max = 64)
         @JsonProperty("usageCategoryMajor")
         private String usageCategoryMajor;
+
+       @JsonProperty("ownershipType")
+       private String ownershipType;
 
         @JsonProperty("owners")
         @Valid

@@ -1,20 +1,20 @@
 package org.egov.pt.repository.builder;
 
-import org.egov.pt.web.models.PropertyCriteria;
-import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.egov.pt.web.models.PropertyCriteria;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
 @Component
 public class PropertyQueryBuilder {
 
-	public static final String INNER_JOIN_STRING = "INNER JOIN";
-	public static final String LEFT_OUTER_JOIN = "LEFT OUTER JOIN";
+	private static final String INNER_JOIN_STRING = "INNER JOIN";
+	private static final String LEFT_OUTER_JOIN_STRING = "LEFT OUTER JOIN";
 	
-	static final String QUERY = "SELECT pt.*,ptdl.*,address.*,owner.*,doc.*,unit.*,"
+	private static final String QUERY = "SELECT pt.*,ptdl.*,address.*,owner.*,doc.*,unit.*,"
 			+ " pt.propertyid as propertyid,ptdl.assessmentnumber as propertydetailid,doc.id as documentid,unit.id as unitid,"
 			+ "address.id as addresskeyid"
 			+ " FROM eg_pt_property_v2 pt "
@@ -26,27 +26,34 @@ public class PropertyQueryBuilder {
 			+ " eg_pt_unit_v2 unit ON ptdl.assessmentnumber=unit.propertydetail "
 			+ INNER_JOIN_STRING
 			+" eg_pt_address_v2 address on address.property=pt.propertyid "
-			+ LEFT_OUTER_JOIN
+			+ LEFT_OUTER_JOIN_STRING
 			+ " eg_pt_document_v2 doc ON ptdl.assessmentnumber=doc.propertydetail "
 			+ " WHERE ";
 	
 	public String getPropertySearchQuery(PropertyCriteria criteria, List<Object> preparedStmtList) {
 		
 		StringBuilder builder = new StringBuilder(QUERY);
-        builder.append("pt.tenantid=?");
+		builder.append("pt.tenantid=?");
 		preparedStmtList.add(criteria.getTenantId());
 		
 		Set<String> ids = criteria.getIds();
 		if(!CollectionUtils.isEmpty(ids)) {
 			
-			builder.append(" and pt.propertyid IN ("+convertSetToString(ids)+")");
+			builder.append("and pt.propertyid IN (").append(convertSetToString(ids)).append(")");
+
+		}
+
+		Set<String> oldpropertyids = criteria.getOldpropertyids();
+		if(!CollectionUtils.isEmpty(oldpropertyids)) {
+
+			builder.append("and pt.oldpropertyid IN (").append(convertSetToString(oldpropertyids)).append(")");
 
 		}
 
 		Set<String> propertyDetailids = criteria.getPropertyDetailids();
 		if(!CollectionUtils.isEmpty(propertyDetailids)) {
 
-			builder.append("and ptdl.assessmentnumber IN ("+convertSetToString(propertyDetailids)+")");
+			builder.append("and ptdl.assessmentnumber IN (").append(convertSetToString(propertyDetailids)).append(")");
 
 		}
 
@@ -57,26 +64,29 @@ public class PropertyQueryBuilder {
 
 		}
 
-		List<Long> ownerids = criteria.getOwnerids();
+		Set<String> ownerids = criteria.getOwnerids();
 		if(!CollectionUtils.isEmpty(ownerids)) {
 
-			builder.append("and owner.userid IN (").append(convertSetToLong(ownerids)).append(")");
+			builder.append("and owner.userid IN (").append(convertSetToString(ownerids)).append(")");
 
 		}
 
 		Set<String> unitids = criteria.getUnitids();
 		if(!CollectionUtils.isEmpty(unitids)) {
 
-			builder.append("and unit.id IN ("+convertSetToString(unitids)+")");
+			builder.append("and unit.id IN (").append(convertSetToString(unitids)).append(")");
 
 		}
-
 
 		Set<String> documentids = criteria.getDocumentids();
 		if(!CollectionUtils.isEmpty(documentids)) {
 
-			builder.append("and doc.id IN ("+convertSetToString(documentids)+")");
+			builder.append("and doc.id IN (").append(convertSetToString(documentids)).append(")");
 
+		}
+
+		if(criteria.getDoorNo()!=null && criteria.getLocality()!=null){
+			builder.append(" and address.doorno = '").append(criteria.getDoorNo()).append("' and address.locality = '").append(criteria.getLocality()).append("'");
 		}
 
 		return builder.toString();
@@ -89,20 +99,7 @@ public class PropertyQueryBuilder {
 		StringBuilder builder = new StringBuilder();
 		Iterator<String> iterator = ids.iterator();
 		while(iterator.hasNext()) {
-			builder.append(quotes+iterator.next()+quotes);
-			if(iterator.hasNext()) builder.append(comma);
-		}
-		return builder.toString();
-	}
-
-	private String convertSetToLong(List<Long> ids) {
-
-		final String quotes = "'";
-		final String comma = ",";
-		StringBuilder builder = new StringBuilder();
-		Iterator<Long> iterator = ids.iterator();
-		while(iterator.hasNext()) {
-			builder.append(quotes+iterator.next()+quotes);
+			builder.append(quotes).append(iterator.next()).append(quotes);
 			if(iterator.hasNext()) builder.append(comma);
 		}
 		return builder.toString();

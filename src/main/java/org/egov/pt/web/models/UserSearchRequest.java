@@ -15,8 +15,11 @@ public class UserSearchRequest {
 	@JsonProperty("RequestInfo")
 	private RequestInfo requestInfo;
 
+	@JsonProperty("uuid")
+	private List<String> uuid;
+
 	@JsonProperty("id")
-	private List<Long> id;
+	private List<String> id;
 
 	@JsonProperty("userName")
 	private String userName;

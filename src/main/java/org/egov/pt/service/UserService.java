@@ -1,6 +1,7 @@
 package org.egov.pt.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.pt.repository.ServiceRequestRepository;
@@ -37,26 +38,27 @@ public class UserService {
     private String userUpdateEndpoint;
 
     public void createUser(PropertyRequest request){
-         StringBuilder uri = new StringBuilder(userHost).append(userContextPath).append(userCreateEndpoint);
-         List<Property> properties = request.getProperties();
-         RequestInfo requestInfo = request.getRequestInfo();
-         properties.forEach(property -> {
-             property.getPropertyDetails().forEach(propertyDetail -> {
-                     propertyDetail.getOwners().forEach(owner -> {
-                     if(owner.getId()==null){
-                         UserDetailResponse userDetailResponse = userExists(owner,requestInfo);
-                         if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
-                         {
-                               LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, new CreateUserRequest(requestInfo,owner));
-                               parseResponse(responseMap);
-                               ObjectMapper mapper = new ObjectMapper();
-                               userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
-                         }
-                         setOwnerFields(owner,userDetailResponse);
-                     }
-                 });
-             });
-         });
+        StringBuilder uri = new StringBuilder(userHost).append(userContextPath).append(userCreateEndpoint);
+        List<Property> properties = request.getProperties();
+        RequestInfo requestInfo = request.getRequestInfo();
+        properties.forEach(property -> {
+            property.getPropertyDetails().forEach(propertyDetail -> {
+                Set<String> listOfMobileNumbers = getMobileNumbers(propertyDetail);
+                propertyDetail.getOwners().forEach(owner -> {
+                    if(owner.getUuid()==null){
+                        setUserName(owner,listOfMobileNumbers);
+                        UserDetailResponse userDetailResponse = userExists(owner,requestInfo);
+                        if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
+                        {   LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, new CreateUserRequest(requestInfo,owner));
+                            parseResponse(responseMap,"dd/MM/yyyy");
+                            ObjectMapper mapper = new ObjectMapper();
+                            userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
+                        }
+                        setOwnerFields(owner,userDetailResponse);
+                    }
+                });
+            });
+        });
     }
 
 
@@ -67,9 +69,28 @@ public class UserService {
         userSearchRequest.setMobileNumber(owner.getMobileNumber());
         userSearchRequest.setName(owner.getName());
         userSearchRequest.setRequestInfo(requestInfo);
+        userSearchRequest.setActive(false);
+        if(owner.getUuid()!=null)
+         userSearchRequest.setUuid(Arrays.asList(owner.getUuid()));
         return searchUser(userSearchRequest);
     }
 
+    private void setUserName(OwnerInfo owner,Set<String> listOfMobileNumber){
+        if(listOfMobileNumber.contains(owner.getMobileNumber())){
+            owner.setUserName(owner.getMobileNumber());
+            listOfMobileNumber.remove(owner.getMobileNumber());
+        }
+        else {
+            String username = (Long.toString(new Date().getTime())).substring(3);
+            owner.setUserName(username);
+        }
+    }
+
+    private Set<String> getMobileNumbers(PropertyDetail propertyDetail){
+        Set<String> listOfMobileNumbers = new HashSet<>();
+        propertyDetail.getOwners().forEach(owner -> {listOfMobileNumbers.add(owner.getMobileNumber());});
+        return listOfMobileNumbers;
+    }
 
     public UserDetailResponse getUser(PropertyCriteria criteria,RequestInfo requestInfo){
         UserSearchRequest userSearchRequest = getUserSearchRequest(criteria,requestInfo);
@@ -80,22 +101,20 @@ public class UserService {
     public UserDetailResponse searchUser(UserSearchRequest userSearchRequest) {
         StringBuilder uri = new StringBuilder(userHost).append(userSearchEndpoint);
         LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, userSearchRequest);
-        parseResponse(responseMap);
+        parseResponse(responseMap,"dd-MM-yyyy");
         ObjectMapper mapper = new ObjectMapper();
         UserDetailResponse userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
         return userDetailResponse;
     }
 
 
-    private void parseResponse(LinkedHashMap responeMap){
+    private void parseResponse(LinkedHashMap responeMap,String dobFormat){
         List<LinkedHashMap> users = (List<LinkedHashMap>)responeMap.get("user");
         String format1 = "dd-MM-yyyy HH:mm:ss";
-        String format2 = "dd/MM/yyyy";
-        String format3 = "dd-MM-yyyy";
         users.forEach( map -> {
             map.put("createdDate",dateTolong((String)map.get("createdDate"),format1));
             map.put("lastModifiedDate",dateTolong((String)map.get("lastModifiedDate"),format1));
-            map.put("dob",dateTolong((String)map.get("dob"),format3));
+            map.put("dob",dateTolong((String)map.get("dob"),dobFormat));
             map.put("pwdExpiryDate",dateTolong((String)map.get("pwdExpiryDate"),format1)); }
         );
     }
@@ -105,7 +124,7 @@ public class UserService {
         SimpleDateFormat f = new SimpleDateFormat(format);
         Date d = null;
         try {
-             d = f.parse(date);
+            d = f.parse(date);
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -114,7 +133,7 @@ public class UserService {
 
 
     private void setOwnerFields(OwnerInfo owner, UserDetailResponse userDetailResponse){
-        owner.setId(userDetailResponse.getUser().get(0).getId());
+        owner.setUuid(userDetailResponse.getUser().get(0).getUuid());
         owner.setCreatedBy(userDetailResponse.getUser().get(0).getCreatedBy());
         owner.setCreatedDate(userDetailResponse.getUser().get(0).getCreatedDate());
         owner.setLastModifiedBy(userDetailResponse.getUser().get(0).getLastModifiedBy());
@@ -124,13 +143,15 @@ public class UserService {
 
     private UserSearchRequest getUserSearchRequest(PropertyCriteria criteria,RequestInfo requestInfo){
         UserSearchRequest userSearchRequest = new UserSearchRequest();
-        List<Long> userIds = criteria.getOwnerids();
-        userSearchRequest.setId(userIds);
+        Set<String> userIds = criteria.getOwnerids();
+        if(!CollectionUtils.isEmpty(userIds))
+         userSearchRequest.setUuid( new ArrayList(userIds));
         userSearchRequest.setRequestInfo(requestInfo);
         userSearchRequest.setTenantId(criteria.getTenantId());
         userSearchRequest.setMobileNumber(criteria.getMobileNumber());
         userSearchRequest.setUserName(criteria.getUserName());
         userSearchRequest.setName(criteria.getName());
+        userSearchRequest.setActive(false);
         return userSearchRequest;
     }
 
@@ -141,21 +162,26 @@ public class UserService {
         properties.forEach(property -> {
             property.getPropertyDetails().forEach(propertyDetail -> {
                 propertyDetail.getOwners().forEach(owner -> {
-                        UserDetailResponse userDetailResponse = userExists(owner,requestInfo);
-                        StringBuilder uri  = new StringBuilder(userHost);
-                        if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
-                            uri=uri.append(userContextPath).append(userCreateEndpoint);
-                        else
-                            uri=uri.append(userContextPath).append(owner.getId()).append(userUpdateEndpoint);
-                        LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, new CreateUserRequest(requestInfo,owner));
-                        parseResponse(responseMap);
-                        ObjectMapper mapper = new ObjectMapper();
-                        userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
-                        setOwnerFields(owner,userDetailResponse);
+                    UserDetailResponse userDetailResponse = userExists(owner,requestInfo);
+                    StringBuilder uri  = new StringBuilder(userHost);
+                    String dobFormat;
+                    if(CollectionUtils.isEmpty(userDetailResponse.getUser())) {
+                        uri = uri.append(userContextPath).append(userCreateEndpoint);
+                        dobFormat="dd/MM/yyyy";
+                    }
+                    else
+                    { owner.setId(userDetailResponse.getUser().get(0).getId());
+                      uri=uri.append(userContextPath).append(owner.getId()).append(userUpdateEndpoint);
+                      dobFormat = "dd-MM-yyyy";
+                    }
+                    LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, new CreateUserRequest(requestInfo,owner));
+                    parseResponse(responseMap,dobFormat);
+                    ObjectMapper mapper = new ObjectMapper();
+                    userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
+                    setOwnerFields(owner,userDetailResponse);
                 });
             });
         });
-
     }
 
 

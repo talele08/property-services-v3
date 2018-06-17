@@ -16,8 +16,10 @@ import lombok.NoArgsConstructor;
 public class PropertyCriteria {
 
 	private String tenantId;
-	
+
 	private Set<String> ids;
+
+	private Set<String> oldpropertyids;
 
 	private Set<String> propertyDetailids;
 
@@ -27,13 +29,17 @@ public class PropertyCriteria {
 
 	private Set<String> documentids;
 
-	private List<Long> ownerids;
+	private Set<String> ownerids;
 
 	private String userName;
 
 	private String mobileNumber;
 
 	private String name;
+
+	private String doorNo;
+
+	private String locality;
 
 
 }
