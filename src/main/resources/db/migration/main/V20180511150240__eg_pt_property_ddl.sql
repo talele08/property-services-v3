@@ -60,7 +60,6 @@ CREATE TABLE eg_pt_owner_v2(
   lastmodifiedby character varying(64),
   lastmodifiedtime bigint,
   CONSTRAINT pk_eg_pt_owner_v2 PRIMARY KEY (userid, propertydetail),
-  CONSTRAINT uk_eg_pt_owner_v2 UNIQUE (userid),
   CONSTRAINT fk_eg_pt_owner_v2 FOREIGN KEY (propertydetail) REFERENCES eg_pt_propertydetail_v2 (assessmentNumber)
   );
 
@@ -136,20 +135,3 @@ CREATE TABLE eg_pt_unit_v2 (
   CONSTRAINT fk_eg_pt_unit_v2 FOREIGN KEY (propertydetail) REFERENCES eg_pt_propertydetail_v2 (assessmentNumber)
 );
 
-
-CREATE TABLE eg_pt_institution_v2 (
-  tenantId character varying(256),
-  id character varying(64),
-  owner character varying(64),
-  institutionname character varying(64),
-  institutiontype character varying(64),
-  authorizedpersonname character varying(64),
-  designation character varying(64),
-  createdby character varying(64),
-  createdtime bigint,
-  lastmodifiedby character varying(64),
-  lastmodifiedtime bigint,
-
-  CONSTRAINT pk_eg_pt_institution_v2 PRIMARY KEY (id),
-  CONSTRAINT fk_eg_pt_institution_v2 FOREIGN KEY (owner) REFERENCES eg_pt_owner_v2 (userid)
-);

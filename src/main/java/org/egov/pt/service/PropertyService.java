@@ -12,7 +12,6 @@ import org.egov.pt.web.models.*;
 import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 @Service
 public class PropertyService {
@@ -63,17 +62,35 @@ public class PropertyService {
 		List<Property> properties;
 		if(criteria.getMobileNumber()!=null || criteria.getName()!=null)
 		{   UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
-			enrichmentService.enrichPropertyCriteria(criteria,userDetailResponse);
+		    if(userDetailResponse.getUser().size()==0){
+		    	return new ArrayList<>();
+			}
+			enrichmentService.enrichPropertyCriteriaWithOwnerids(criteria,userDetailResponse);
 			properties = repository.getProperties(criteria);
-			enrichmentService.enrichOwner(userDetailResponse,properties);
+			if(properties.size()==0){
+				return new ArrayList<>();
+			}
+			criteria=enrichmentService.getPropertyCriteriaFromPropertyIds(properties);
+			properties = getPropertiesWithOwnerInfo(criteria,requestInfo);
 		}
 	    else{
-			properties = repository.getProperties(criteria);
-			enrichmentService.enrichPropertyCriteria(criteria,properties);
-			UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
-			enrichmentService.enrichOwner(userDetailResponse,properties);
+			properties = getPropertiesWithOwnerInfo(criteria,requestInfo);
 	   }
 		  return properties;
+	}
+
+	/**
+	 * Returns list of properties based on the given propertyCriteria with owner fields populated from user service
+	 * @param criteria
+	 * @param requestInfo
+	 * @return
+	 */
+	private List<Property> getPropertiesWithOwnerInfo(PropertyCriteria criteria,RequestInfo requestInfo){
+		List<Property> properties = repository.getProperties(criteria);
+		enrichmentService.enrichPropertyCriteriaWithOwnerids(criteria,properties);
+		UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
+		enrichmentService.enrichOwner(userDetailResponse,properties);
+		return properties;
 	}
 
 	/**
@@ -97,7 +114,7 @@ public class PropertyService {
 		}
 		else if(ifPropertyExists && paid){
 			enrichmentService.enrichCreateRequest(request,true);
-			userService.createUser(request);    // Update on uuid not available
+			userService.createUser(request);
 			producer.push(config.getUpdatePropertyTopic(), request);
 			return request.getProperties();
 		}

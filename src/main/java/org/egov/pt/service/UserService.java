@@ -53,6 +53,7 @@ public class UserService {
                             parseResponse(responseMap,"dd/MM/yyyy");
                             ObjectMapper mapper = new ObjectMapper();
                             userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
+                            log.info("owner created --> "+userDetailResponse.getUser().get(0).getUuid());
                         }
                         setOwnerFields(owner,userDetailResponse);
                     }
@@ -65,7 +66,7 @@ public class UserService {
     private UserDetailResponse userExists(OwnerInfo owner,RequestInfo requestInfo){
         UserSearchRequest userSearchRequest =new UserSearchRequest();
         userSearchRequest.setTenantId(owner.getTenantId());
-        userSearchRequest.setUserName(owner.getUserName());
+  //      userSearchRequest.setUserName(owner.getUserName());
         userSearchRequest.setMobileNumber(owner.getMobileNumber());
         userSearchRequest.setName(owner.getName());
         userSearchRequest.setRequestInfo(requestInfo);
@@ -149,7 +150,7 @@ public class UserService {
         userSearchRequest.setRequestInfo(requestInfo);
         userSearchRequest.setTenantId(criteria.getTenantId());
         userSearchRequest.setMobileNumber(criteria.getMobileNumber());
-        userSearchRequest.setUserName(criteria.getUserName());
+     //   userSearchRequest.setUserName(criteria.getUserName());
         userSearchRequest.setName(criteria.getName());
         userSearchRequest.setActive(false);
         return userSearchRequest;

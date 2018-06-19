@@ -4,13 +4,11 @@ import org.dozer.DozerBeanMapper;
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.pt.config.PropertyConfiguration;
 import org.egov.pt.repository.IdGenRepository;
-import org.egov.pt.util.PTConstants;
 import org.egov.pt.util.PropertyUtil;
 import org.egov.pt.web.models.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.dozer.DozerBeanMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,6 +31,7 @@ public class EnrichmentService {
     /**
      * Assigns UUIDs to all id fields and also assigns acknowledgementnumber and assessmentnumber generated from idgen
      * @param request
+     * @param onlyPropertyDetail
      */
     public void enrichCreateRequest(PropertyRequest request,Boolean onlyPropertyDetail) {
         RequestInfo requestInfo = request.getRequestInfo();
@@ -41,7 +40,7 @@ public class EnrichmentService {
         for (Property property : request.getProperties()) {
             if(!onlyPropertyDetail)
              property.getAddress().setId(UUID.randomUUID().toString());
-        //     property.setAccountId(request.getRequestInfo().getUserInfo().getUuid());
+        //    property.setAccountId(request.getRequestInfo().getUserInfo().getUuid());
             property.setAuditDetails(auditDetails);
             property.setStatus(PropertyInfo.StatusEnum.ACTIVE);
             property.getPropertyDetails().forEach(propertyDetail -> {
@@ -68,9 +67,7 @@ public class EnrichmentService {
      * @param request
      * @param propertiesFromResponse
      */
-
     public void enrichUpdateRequest(PropertyRequest request,List<Property> propertiesFromResponse) {
-
         RequestInfo requestInfo = request.getRequestInfo();
         AuditDetails auditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getId().toString(), false);
 
@@ -85,36 +82,29 @@ public class EnrichmentService {
             Property responseProperty = idToProperty.get(id);
             property.getAddress().setId(responseProperty.getAddress().getId());
 
-
             property.getPropertyDetails().forEach(propertyDetail -> {
-                if (propertyDetail.getAssessmentNumber() == null) {
+                if (propertyDetail.getAssessmentNumber() == null)
                     propertyDetail.setAssessmentNumber(UUID.randomUUID().toString());
-                }
                 Set<Document> documents = propertyDetail.getDocuments();
                 Set<Unit> units=propertyDetail.getUnits();
 
                 if(documents!=null && !documents.isEmpty()){
                     documents.forEach(document ->{
-                        if(document.getId()==null){
-                            document.setId(UUID.randomUUID().toString());
-                        }
+                        if(document.getId()==null) document.setId(UUID.randomUUID().toString());
                     });
                 }
                 if(units!=null && !units.isEmpty()){
                     units.forEach(unit ->{
-                        if(unit.getId()==null){
-                            unit.setId(UUID.randomUUID().toString());
-                        }
+                        if(unit.getId()==null) unit.setId(UUID.randomUUID().toString());
                     });
                 }
             });
-
         }
     }
 
 
     /**
-     *
+     * Returns a list of numbers generated from idgen
      * @param requestInfo
      * @param tenantId
      * @param idKey
@@ -122,7 +112,6 @@ public class EnrichmentService {
      * @param count
      * @return
      */
-
     private List<String> getIdList(RequestInfo requestInfo, String tenantId, String idKey,
                                    String idformat,int count) {
         return idGenRepository.getId(requestInfo, tenantId, idKey, idformat,count).getIdResponses().stream()
@@ -131,11 +120,10 @@ public class EnrichmentService {
 
     /**
      * Sets the acknowledgement and assessment Numbers for given PropertyRequest
-     * @param request
+     * @param request PropertyRequest which is to be created
      */
-
-    private void setIdgenIds(PropertyRequest request)
-    {   RequestInfo requestInfo = request.getRequestInfo();
+    private void setIdgenIds(PropertyRequest request) {
+        RequestInfo requestInfo = request.getRequestInfo();
         String tenantId = request.getProperties().get(0).getTenantId();
         List<Property> properties = request.getProperties();
 
@@ -151,24 +139,16 @@ public class EnrichmentService {
 
     /**
      * Populates the owner fields inside of property objects from the response got from calling user api
-     * @param userDetailResponse
-     * @param properties
+     * @param userDetailResponse response from user api which contains list of user which are used to populate owners in properties
+     * @param properties List of property whose owner's are to be populated from userDetailResponse
      */
     public void enrichOwner(UserDetailResponse userDetailResponse, List<Property> properties){
         List<OwnerInfo> users = userDetailResponse.getUser();
         Map<String,OwnerInfo> userIdToOwnerMap = new HashMap<>();
-        users.forEach(user -> {
-            userIdToOwnerMap.put(user.getUuid(),user);
-        });
+        users.forEach(user -> userIdToOwnerMap.put(user.getUuid(),user));
         DozerBeanMapper dozerBeanMapper = new DozerBeanMapper();
-
         properties.forEach(property -> {
-            property.getPropertyDetails().forEach(propertyDetail -> {
-                propertyDetail.getOwners().forEach(owner -> {
-                    addOwnerDetail(owner,userIdToOwnerMap,dozerBeanMapper);
-                });
-
-            });
+            property.getPropertyDetails().forEach(propertyDetail -> propertyDetail.getOwners().forEach(owner -> addOwnerDetail(owner,userIdToOwnerMap,dozerBeanMapper)));
         });
     }
 
@@ -219,26 +199,45 @@ public class EnrichmentService {
          dozerBeanMapper.map(user,owner);
     }
 
-    public void enrichPropertyCriteria(PropertyCriteria criteria,UserDetailResponse userDetailResponse){
+
+    /**
+     * Populates ownerids in PropertyCriteria with the uuid's of users in userDetailResponse
+     * @param criteria PropertyCriteria whose ownerids are to be populated
+     * @param userDetailResponse The user response that contains list of users whose uuid's are to added
+     */
+    public void enrichPropertyCriteriaWithOwnerids(PropertyCriteria criteria, UserDetailResponse userDetailResponse){
         if(CollectionUtils.isEmpty(criteria.getOwnerids())){
             Set<String> ownerids = new HashSet<>();
-            userDetailResponse.getUser().forEach(owner -> {
-                ownerids.add(owner.getUuid());
-            });
+            userDetailResponse.getUser().forEach(owner -> ownerids.add(owner.getUuid()));
             criteria.setOwnerids(ownerids);
         }
     }
 
-    public void enrichPropertyCriteria(PropertyCriteria criteria,List<Property> properties){
+    /**
+     * Overloaded function which populates ownerids in criteria from list of property
+     * @param criteria PropertyCriteria whose ownerids are to be populated
+     * @param properties List of property whose owner's uuids are to added in propertyCriteria
+     */
+    public void enrichPropertyCriteriaWithOwnerids(PropertyCriteria criteria, List<Property> properties){
         Set<String> ownerids = new HashSet<>();
         properties.forEach(property -> {
-            property.getPropertyDetails().forEach(propertyDetail -> {
-                propertyDetail.getOwners().forEach(owner ->{
-                    ownerids.add(owner.getUuid());
-                });
-            });
+            property.getPropertyDetails().forEach(propertyDetail -> propertyDetail.getOwners().forEach(owner -> ownerids.add(owner.getUuid())));
         });
         criteria.setOwnerids(ownerids);
+    }
+
+    /**
+     * Returns PropertyCriteria with ids populated using propertyids from properties
+     * @param properties properties whose propertyids are to added to propertyCriteria for search
+     * @return propertyCriteria to search on basis of propertyids
+     */
+    public PropertyCriteria getPropertyCriteriaFromPropertyIds(List<Property> properties){
+        PropertyCriteria criteria = new PropertyCriteria();
+        Set<String> propertyids = new HashSet<>();
+        properties.forEach(property -> propertyids.add(property.getPropertyId()));
+        criteria.setIds(propertyids);
+        criteria.setTenantId(properties.get(0).getTenantId());
+        return criteria;
     }
 
 
