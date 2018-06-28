@@ -89,6 +89,10 @@ public class PropertyQueryBuilder {
 			builder.append(" and address.doorno = '").append(criteria.getDoorNo()).append("' and address.locality = '").append(criteria.getLocality()).append("'");
 		}
 
+		if(criteria.getAccountId()!=null) {
+			builder.append(" and pt.accountid = '").append(criteria.getAccountId()).append("'");
+		}
+
 		return builder.toString();
 	}
 	

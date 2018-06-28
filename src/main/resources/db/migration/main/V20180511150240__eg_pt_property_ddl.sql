@@ -37,9 +37,8 @@ CREATE TABLE eg_pt_propertydetail_v2 (
   assessmentNumber character varying(256),
   financialYear character varying(64),
   assessmentDate bigint,
-  ownershipType character varying(64),
-
-
+  ownershipCategory character varying(64),
+  subOwnershipCategory character varying(64),
 
   CONSTRAINT pk_eg_pt_propertydetail_v2 PRIMARY KEY (assessmentNumber),
   CONSTRAINT uk_eg_pt_propertydetail_v2 UNIQUE (assessmentNumber),

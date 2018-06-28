@@ -30,8 +30,8 @@ public class EnrichmentService {
 
     /**
      * Assigns UUIDs to all id fields and also assigns acknowledgementnumber and assessmentnumber generated from idgen
-     * @param request
-     * @param onlyPropertyDetail
+     * @param request  PropertyRequest received for property creation
+     * @param onlyPropertyDetail if true only the fields related to propertyDetail are enriched(assigned)
      */
     public void enrichCreateRequest(PropertyRequest request,Boolean onlyPropertyDetail) {
         RequestInfo requestInfo = request.getRequestInfo();
@@ -40,22 +40,14 @@ public class EnrichmentService {
         for (Property property : request.getProperties()) {
             if(!onlyPropertyDetail)
              property.getAddress().setId(UUID.randomUUID().toString());
-        //    property.setAccountId(request.getRequestInfo().getUserInfo().getUuid());
+         //  property.setAccountId(request.getRequestInfo().getUserInfo().getUuid());
             property.setAuditDetails(auditDetails);
             property.setStatus(PropertyInfo.StatusEnum.ACTIVE);
             property.getPropertyDetails().forEach(propertyDetail -> {
                 propertyDetail.setAssessmentNumber(UUID.randomUUID().toString());
-                Set<Unit> units =propertyDetail.getUnits();
-                units.forEach(unit -> {
-                    unit.setId(UUID.randomUUID().toString());
-                });
-                Set<Document> documents = propertyDetail.getDocuments();
-                documents.forEach(document ->{
-                    document.setId(UUID.randomUUID().toString());
-                });
-
-                Long time = new Date().getTime();
-                propertyDetail.setAssessmentDate(time);
+                propertyDetail.getUnits().forEach(unit -> unit.setId(UUID.randomUUID().toString()));
+                propertyDetail.getDocuments().forEach(document -> document.setId(UUID.randomUUID().toString()));
+                propertyDetail.setAssessmentDate(new Date().getTime());
             });
         }
         if(!onlyPropertyDetail)
@@ -64,23 +56,33 @@ public class EnrichmentService {
 
     /**
      * Assigns UUID for new fields that are added and sets propertyDetail and address ids from propertyId
-     * @param request
-     * @param propertiesFromResponse
+     * @param request  PropertyRequest received for property update
+     * @param propertiesFromResponse Properties returned by calling search based on ids in PropertyRequest
      */
     public void enrichUpdateRequest(PropertyRequest request,List<Property> propertiesFromResponse) {
         RequestInfo requestInfo = request.getRequestInfo();
         AuditDetails auditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getId().toString(), false);
 
+        /*Map of propertyId to property is created from the responseproperty list
+        * Not required if address id is sent in request was used before when one to one mapping was
+        * present between property and propertyDetail
+        * */
         Map<String,Property> idToProperty = new HashMap<>();
         propertiesFromResponse.forEach(propertyFromResponse -> {
             idToProperty.put(propertyFromResponse.getPropertyId(),propertyFromResponse);
         });
 
+        /*For every Property if id of any subfield is null new uuid is assigned
+         *
+          * */
         for (Property property : request.getProperties()){
             property.setAuditDetails(auditDetails);
+
+            //Not Required **
             String id = property.getPropertyId();
             Property responseProperty = idToProperty.get(id);
             property.getAddress().setId(responseProperty.getAddress().getId());
+            /**/
 
             property.getPropertyDetails().forEach(propertyDetail -> {
                 if (propertyDetail.getAssessmentNumber() == null)
@@ -105,12 +107,12 @@ public class EnrichmentService {
 
     /**
      * Returns a list of numbers generated from idgen
-     * @param requestInfo
-     * @param tenantId
-     * @param idKey
-     * @param idformat
-     * @param count
-     * @return
+     * @param requestInfo RequestInfo from the request
+     * @param tenantId tenantId of the city
+     * @param idKey code of the field defined in application properties for which ids are generated for
+     * @param idformat format in which ids are to be generated
+     * @param count Number of ids to be generated
+     * @return List of ids generated using idGen service
      */
     private List<String> getIdList(RequestInfo requestInfo, String tenantId, String idKey,
                                    String idformat,int count) {
@@ -189,12 +191,13 @@ public class EnrichmentService {
 
 
     /**
-     * Copies all fields to owner from the corresponding ownerInfo from userIdToOwnerMap
+     * Copies all fields to owner from the corresponding ownerInfo in userIdToOwnerMap
      * @param owner Owner whose fields are to be populated
      * @param userIdToOwnerMap Map of userId to OwnerInfo
      */
     private void addOwnerDetail(OwnerInfo owner,Map<String,OwnerInfo> userIdToOwnerMap,DozerBeanMapper dozerBeanMapper ){
         OwnerInfo user = userIdToOwnerMap.get(owner.getUuid());
+        // Is the condition correct or we should throw error?
         if(user!=null)
          dozerBeanMapper.map(user,owner);
     }

@@ -41,8 +41,8 @@ public class PropertyService {
 
 	/**
 	 * Assign ids through enrichment and pushes to kafka
-	 * @param request
-	 * @return
+	 * @param request PropertyRequest containing list of properties to be created
+	 * @return List of properties successfully created
 	 */
 	public List<Property> createProperty(PropertyRequest request) {
 		userService.createUser(request);
@@ -55,8 +55,8 @@ public class PropertyService {
 
 	/**
 	 * Search property with given PropertyCriteria
-	 * @param criteria
-	 * @return
+	 * @param criteria PropertyCriteria containing fields on which search is based
+	 * @return list of properties satisfying the containing fields in criteria
 	 */
 	public List<Property> searchProperty(PropertyCriteria criteria,RequestInfo requestInfo) {
 		List<Property> properties;
@@ -81,9 +81,9 @@ public class PropertyService {
 
 	/**
 	 * Returns list of properties based on the given propertyCriteria with owner fields populated from user service
-	 * @param criteria
-	 * @param requestInfo
-	 * @return
+	 * @param criteria PropertyCriteria on which to search properties
+	 * @param requestInfo RequestInfo object of the request
+	 * @return properties with owner information added from user service
 	 */
 	private List<Property> getPropertiesWithOwnerInfo(PropertyCriteria criteria,RequestInfo requestInfo){
 		List<Property> properties = repository.getProperties(criteria);
@@ -94,9 +94,9 @@ public class PropertyService {
 	}
 
 	/**
-	 * Enriches and updates the property
-	 * @param request
-	 * @return
+	 * Updates the property
+	 * @param request PropertyRequest containing list of properties to be update
+	 * @return List of updated properties
 	 */
 	public List<Property> updateProperty(PropertyRequest request) {
 		PropertyCriteria propertyCriteria = propertyValidator.getPropertyCriteriaForSearch(request);
@@ -126,7 +126,9 @@ public class PropertyService {
 
 	/*private List<Property> createPropertyDetail(PropertyRequest request){
 		userService.createUser(request);
-		enrichmentService.enrichCreateRequest(request,true);
+		enrichmentService.enrichCreateRequest(request,true);This is in sharp contrast to the way most VCS tools branch, which involves copying all of the project’s files into a second directory. This can take several seconds or even minutes, depending on the size of the project, whereas in Git the process is always instantaneous. Also, because we’re recording the parents when we commit, finding a proper merge base for merging is automatically done for us and is generally very easy to do. These features help encourage developers to create and use branches often.
+
+
 		propertyValidator.validateMasterData(request);
 		producer.push(config.getSavePropertyTopic(), request);
 		return request.getProperties();

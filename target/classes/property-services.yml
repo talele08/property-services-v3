@@ -35,7 +35,7 @@ serviceMaps:
           - jsonPath: $.properties.*.auditDetails.lastModifiedTime
 
 
-       - query: INSERT INTO eg_pt_propertydetail_v2(tenantId,assessmentNumber,property,ownershipType,source,usage,noOfFloors,landArea,buildUpArea,additionalDetails,channel,financialYear,propertyType,propertySubType,usageCategoryMajor,assessmentDate,createdby, lastmodifiedby, createdtime, lastmodifiedtime) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+       - query: INSERT INTO eg_pt_propertydetail_v2(tenantId,assessmentNumber,property,ownershipCategory,source,usage,noOfFloors,landArea,buildUpArea,additionalDetails,channel,financialYear,propertyType,propertySubType,usageCategoryMajor,assessmentDate,createdby, lastmodifiedby, createdtime, lastmodifiedtime) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
          basePath: properties.*.propertyDetails.*
          jsonMaps:
 
@@ -45,7 +45,7 @@ serviceMaps:
 
            - jsonPath: $.properties[*][?({assessmentNumber} in @.propertyDetails[*].assessmentNumber)].propertyId
 
-           - jsonPath: $.properties.*.propertyDetails.*.ownershipType
+           - jsonPath: $.properties.*.propertyDetails.*.ownershipCategory
 
            - jsonPath: $.properties.*.propertyDetails.*.source
 

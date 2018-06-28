@@ -58,6 +58,7 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 						.occupancyDate(rs.getLong("occupancyDate")).propertyId(currentId)
 						.oldPropertyId(rs.getString("oldPropertyId"))
 						.status(PropertyInfo.StatusEnum.fromValue(rs.getString("status")))
+						.accountId(rs.getString("accountId"))
 						.tenantId(tenanId).auditDetails(auditdetails).build();
 
 				propertyMap.put(currentId, currentProperty);
@@ -89,6 +90,8 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 					.usage(rs.getString("usage")).assessmentDate(rs.getLong("assessmentDate"))
 					.assessmentNumber(rs.getString("assessmentNumber")).financialYear(rs.getString("financialYear"))
 					.propertyType(rs.getString("propertyType")).propertySubType(rs.getString("propertySubType"))
+					.ownershipCategory(rs.getString("ownershipCategory"))
+					.subOwnershipCategory(rs.getString("subOwnershipCategory"))
 					.usageCategoryMajor(rs.getString("usageCategoryMajor"))
 					.build();
 			property.addpropertyDetailsItem(detail);

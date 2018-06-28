@@ -118,8 +118,8 @@ public class PropertyValidator {
        errorMap.put("Invalid PropertyType","The PropertyType '"+propertyDetail.getPropertyType()+"' does not exists");
        }
 
-       if(!codes.get(PTConstants.MDMS_PT_SUBOWNERSHIP).contains(propertyDetail.getOwnershipType()) && propertyDetail.getOwnershipType()!=null){
-           errorMap.put("Invalid OwnershipType","The OwnershipType '"+propertyDetail.getOwnershipType()+"' does not exists");
+       if(!codes.get(PTConstants.MDMS_PT_SUBOWNERSHIP).contains(propertyDetail.getOwnershipCategory()) && propertyDetail.getOwnershipCategory()!=null){
+           errorMap.put("Invalid OwnershipType","The OwnershipType '"+propertyDetail.getOwnershipCategory()+"' does not exists");
        }
 
        if(!codes.get(PTConstants.MDMS_PT_PROPERTYSUBTYPE).contains(propertyDetail.getPropertySubType()) && propertyDetail.getPropertySubType()!=null){
@@ -191,7 +191,9 @@ public class PropertyValidator {
         Set<String> addressids = new HashSet<>();
 
         PropertyCriteria propertyCriteria = new PropertyCriteria();
-
+      /*
+      * Is search on ids other than propertyIds required?
+      * */
         properties.forEach(property -> {
                     ids.add(property.getPropertyId());
                     if(!CollectionUtils.isEmpty(ids)) {
