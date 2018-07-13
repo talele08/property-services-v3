@@ -191,7 +191,8 @@ public class UserServiceTest {
             assertEquals(owner.getCreatedDate(),user.getCreatedDate());
             assertEquals(owner.getLastModifiedBy(),user.getLastModifiedBy());
             assertEquals(owner.getLastModifiedDate(),user.getLastModifiedDate());
-        });}
+        });
+    }
 
 
     private <T> T getObject(final String filepath,Class<T> className) throws IOException {

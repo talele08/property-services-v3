@@ -26,10 +26,9 @@ public class PropertyRepository {
 	private PropertyRowMapper rowMapper;
 	
 	public List<Property> getProperties(PropertyCriteria criteria){
-
 		List<Object> preparedStmtList = new ArrayList<>();
 		String query = queryBuilder.getPropertySearchQuery(criteria, preparedStmtList);
-		log.info("query: "+query);
+		log.info("Query: "+query);
 		return jdbcTemplate.query(query, preparedStmtList.toArray(), rowMapper);
 	}
 }

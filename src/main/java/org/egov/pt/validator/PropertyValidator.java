@@ -1,6 +1,7 @@
 package org.egov.pt.validator;
 
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.mdms.model.MdmsCriteriaReq;
 import org.egov.pt.repository.ServiceRequestRepository;
@@ -12,11 +13,13 @@ import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+@Slf4j
 @Component
 public class PropertyValidator {
 
@@ -48,6 +51,8 @@ public class PropertyValidator {
          else if(request.getRequestInfo().getUserInfo()==null){
              errorMap.put("EG_PT_REQUESTINFO_USERINFO","UserInfo is mandatory for RequestInfo");
          }
+
+
          if (!errorMap.isEmpty())
              throw new CustomException(errorMap);
 
@@ -66,14 +71,14 @@ public class PropertyValidator {
 
       String[] masterNames = {PTConstants.MDMS_PT_CONSTRUCTIONSUBTYPE, PTConstants.MDMS_PT_CONSTRUCTIONTYPE, PTConstants.MDMS_PT_OCCUPANCYTYPE,
       PTConstants.MDMS_PT_PROPERTYTYPE,PTConstants.MDMS_PT_PROPERTYSUBTYPE,PTConstants.MDMS_PT_OWNERSHIP,PTConstants.MDMS_PT_SUBOWNERSHIP,
-      PTConstants.MDMS_PT_USAGEMAJOR,PTConstants.MDMS_PT_USAGEMINOR,PTConstants.MDMS_PT_USAGESUBMINOR,PTConstants.MDMS_PT_USAGEDETAIL
-      };
-      List<String> names = new ArrayList<>();
-      names.addAll(Arrays.asList(masterNames));
+      PTConstants.MDMS_PT_USAGEMAJOR,PTConstants.MDMS_PT_USAGEMINOR,PTConstants.MDMS_PT_USAGESUBMINOR,PTConstants.MDMS_PT_USAGEDETAIL,
+      PTConstants.MDMS_PT_OWNERTYPE};
+        List<String> names = new ArrayList<>(Arrays.asList(masterNames));
 
-        validateFinancialYear(request,errorMap);
-
-        Map<String,List<String>> codes = getAttributeValues(tenantId,PTConstants.MDMS_PT_MOD_NAME,names,"$.*.code",request.getRequestInfo());
+    //  validateFinancialYear(request,errorMap);
+      validateInstitution(request,errorMap);
+      Map<String,List<String>> codes = getAttributeValues(tenantId,PTConstants.MDMS_PT_MOD_NAME,names,"$.*.code",request.getRequestInfo());
+      validateMDMSData(masterNames,codes);
       validateCodes(request.getProperties(),codes,errorMap);
 
         if (!errorMap.isEmpty())
@@ -111,6 +116,7 @@ public class PropertyValidator {
      *
      */
    public static Map<String,String> validateCodes(List<Property> properties,Map<String,List<String>> codes,Map<String,String> errorMap){
+      log.info("Validating Property");
        properties.forEach(property -> {
            property.getPropertyDetails().forEach(propertyDetail -> {
 
@@ -118,8 +124,12 @@ public class PropertyValidator {
        errorMap.put("Invalid PropertyType","The PropertyType '"+propertyDetail.getPropertyType()+"' does not exists");
        }
 
-       if(!codes.get(PTConstants.MDMS_PT_SUBOWNERSHIP).contains(propertyDetail.getOwnershipCategory()) && propertyDetail.getOwnershipCategory()!=null){
-           errorMap.put("Invalid OwnershipType","The OwnershipType '"+propertyDetail.getOwnershipCategory()+"' does not exists");
+       if(!codes.get(PTConstants.MDMS_PT_SUBOWNERSHIP).contains(propertyDetail.getSubOwnershipCategory()) && propertyDetail.getSubOwnershipCategory()!=null){
+           errorMap.put("Invalid SubOwnershipCategory","The SubOwnershipCategory '"+propertyDetail.getSubOwnershipCategory()+"' does not exists");
+       }
+
+       if(!codes.get(PTConstants.MDMS_PT_OWNERSHIP).contains(propertyDetail.getOwnershipCategory()) && propertyDetail.getOwnershipCategory()!=null){
+           errorMap.put("Invalid OwnershipCategory","The OwnershipCategory '"+propertyDetail.getOwnershipCategory()+"' does not exists");
        }
 
        if(!codes.get(PTConstants.MDMS_PT_PROPERTYSUBTYPE).contains(propertyDetail.getPropertySubType()) && propertyDetail.getPropertySubType()!=null){
@@ -158,11 +168,16 @@ public class PropertyValidator {
                if(!codes.get(PTConstants.MDMS_PT_OCCUPANCYTYPE).contains(unit.getOccupancyType()) && unit.getOccupancyType()!=null){
                    errorMap.put("Invalid OccupancyType","The OccupancyType '"+unit.getOccupancyType()+"' does not exists");
                }
+
+               if(unit.getOccupancyType().equals("RENTED")){
+                   if(unit.getArv()==null || unit.getArv().compareTo(new BigDecimal(0))!=1)
+                       errorMap.put("INVALID ARV","Total Annual Rent should be greater than zero ");
+               }
            });
 
 	       propertyDetail.getOwners().forEach(owner ->{
-               if(!codes.get(PTConstants.MDMS_PT_USAGEMAJOR).contains(owner.getOwnerType()) && owner.getOwnerType()!=null){
-                   errorMap.put("Invalid OwnerType","The UsageCategoryMajor '"+owner.getOwnerType()+"' does not exists");
+               if(!codes.get(PTConstants.MDMS_PT_OWNERTYPE).contains(owner.getOwnerType()) && owner.getOwnerType()!=null){
+                   errorMap.put("Invalid OwnerType","The OwnerType '"+owner.getOwnerType()+"' does not exists");
                }
            });
 	     });
@@ -172,6 +187,17 @@ public class PropertyValidator {
 
    }
 
+
+   private void validateMDMSData(String[] masterNames,Map<String,List<String>> codes){
+       Map<String,String> errorMap = new HashMap<>();
+       for(String masterName:masterNames){
+               if(CollectionUtils.isEmpty(codes.get(masterName))){
+               errorMap.put("MDMS data Error ","Unable to fetch "+masterName+" codes from MDMS");
+            }
+           }
+       if (!errorMap.isEmpty())
+           throw new CustomException(errorMap);
+   }
 
     /**
      * Returns PropertyCriteria to search for properties in database with ids set from properties in request
@@ -243,7 +269,7 @@ public class PropertyValidator {
     /**
      * Adds ids of all Units of property to a list
      * @param propertyDetail
-     * @return
+     * @return List of all unitids of a propertyDetail
      */
     private Set<String> getUnitids(PropertyDetail propertyDetail){
         Set<Unit> units= propertyDetail.getUnits();
@@ -259,7 +285,7 @@ public class PropertyValidator {
     /**
      * Adds ids of all Documents of property to a list
      * @param propertyDetail
-     * @return
+     * @return List of all documentids of properyDetail
      */
     private Set<String> getDocumentids(PropertyDetail propertyDetail){
         Set<Document> documents= propertyDetail.getDocuments();
@@ -320,6 +346,65 @@ public class PropertyValidator {
               }
       ));
     }
+
+    /**
+     * Validates if institution Object has null InstitutionType
+     * @param request PropertyRequest which is to be validated
+     * @param errorMap ErrorMap to catch and to throw error using CustomException
+     */
+    private void validateInstitution(PropertyRequest request,Map<String,String> errorMap){
+        List<Property> properties = request.getProperties();
+        properties.forEach(property -> {
+            property.getPropertyDetails().forEach(propertyDetail -> {
+               if(propertyDetail.getInstitution()!=null){
+                   if(propertyDetail.getInstitution().getType()==null)
+                       errorMap.put(" INVALID INSTITUTION OBJECT ","The institutionType cannot be null ");
+                   if(propertyDetail.getInstitution().getName()==null)
+                       errorMap.put("INVALID INSTITUTION OBJECT","Institution name cannot be null");
+               }
+               else if(!propertyDetail.getSubOwnershipCategory().equals("INSTITUTIONAL") && propertyDetail.getInstitution()!=null){
+                   errorMap.put(" INVALID INSTITUTION OBJECT ","The institution Object should be null. Type of OwnerShip is not Institution ");
+               }
+            });
+        });
+    }
+
+
+
+    public void validateAssessees(PropertyRequest request){
+       String uuid = request.getRequestInfo().getUserInfo().getUuid();
+        Map<String,String> errorMap = new HashMap<>();
+        request.getProperties().forEach(property -> {
+            property.getPropertyDetails().forEach(propertyDetail -> {
+                if(!propertyDetail.getCitizenInfo().getUuid().equals(uuid)){
+                    errorMap.put("UPDATE AUTHORIZATION FAILURE","Not Authorized to assess property with propertyId "+property.getPropertyId());
+                }
+            });
+        });
+        if(!errorMap.isEmpty())
+            throw new CustomException(errorMap);
+    }
+
+    public void validateCitizenInfo(PropertyRequest request){
+        Map<String,String> errorMap = new HashMap<>();
+        RequestInfo requestInfo = request.getRequestInfo();
+        if(!requestInfo.getUserInfo().getType().equals("CITIZEN")){
+            request.getProperties().forEach(property -> {
+                property.getPropertyDetails().forEach(propertyDetail -> {
+                    if(propertyDetail.getCitizenInfo()==null){
+                        errorMap.put("INVALID CITIZENINFO","CitizenInfo Object cannot be null");
+                    }
+                    else if(propertyDetail.getCitizenInfo().getMobileNumber()==null)
+                        errorMap.put("INVALID CITIZENINFO","MobileNumber in CitizenInfo cannot be null");
+                    else if(propertyDetail.getCitizenInfo().getName()==null)
+                        errorMap.put("INVALID CITIZENINFO","Name in CitizenInfo cannot be null");
+                });
+            });
+        }
+        if(!errorMap.isEmpty())
+            throw new CustomException(errorMap);
+    }
+
 
 
 }

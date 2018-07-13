@@ -45,9 +45,11 @@ public class PropertyService {
 	 * @return List of properties successfully created
 	 */
 	public List<Property> createProperty(PropertyRequest request) {
+		propertyValidator.validateMasterData(request);
+		propertyValidator.validateCitizenInfo(request);
 		userService.createUser(request);
 		enrichmentService.enrichCreateRequest(request,false);
-		propertyValidator.validateMasterData(request);
+		userService.createCitizen(request);
 		producer.push(config.getSavePropertyTopic(), request);
 		return request.getProperties();
 	}
@@ -62,11 +64,13 @@ public class PropertyService {
 		List<Property> properties;
 		if(criteria.getMobileNumber()!=null || criteria.getName()!=null)
 		{   UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
+		    // If user not found with given user fields return empty list
 		    if(userDetailResponse.getUser().size()==0){
 		    	return new ArrayList<>();
 			}
 			enrichmentService.enrichPropertyCriteriaWithOwnerids(criteria,userDetailResponse);
 			properties = repository.getProperties(criteria);
+			// If property not found with given propertyId or oldPropertyId or address fields return empty list
 			if(properties.size()==0){
 				return new ArrayList<>();
 			}
@@ -102,7 +106,14 @@ public class PropertyService {
 		PropertyCriteria propertyCriteria = propertyValidator.getPropertyCriteriaForSearch(request);
 		List<Property> propertiesFromSearchResponse = searchProperty(propertyCriteria,request.getRequestInfo());
 		boolean ifPropertyExists=propertyValidator.PropertyExists(request,propertiesFromSearchResponse);
+		propertyValidator.validateCitizenInfo(request);
+
+		if(request.getRequestInfo().getUserInfo().getType().equalsIgnoreCase("CITIZEN"))
+		 propertyValidator.validateAssessees(request);
+
+
 		boolean paid = true;
+
 		/**
 		 * Call demand api to check if payment is done
 		 */
@@ -115,12 +126,12 @@ public class PropertyService {
 		else if(ifPropertyExists && paid){
 			enrichmentService.enrichCreateRequest(request,true);
 			userService.createUser(request);
+			userService.createCitizen(request);
 			producer.push(config.getUpdatePropertyTopic(), request);
 			return request.getProperties();
 		}
 		else
-		{    throw new CustomException("usr_002","invalid id");  // Change the error code
-
+		{    throw new CustomException("PROPERTY NOT FOUND","The property to be updated does not exist");  // Change the error code
 		}
 	}
 
