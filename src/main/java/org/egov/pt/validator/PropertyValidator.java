@@ -4,6 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.mdms.model.MdmsCriteriaReq;
+import org.egov.pt.repository.PropertyRepository;
 import org.egov.pt.repository.ServiceRequestRepository;
 import org.egov.pt.util.ErrorConstants;
 import  org.egov.pt.util.PTConstants;
@@ -28,6 +29,9 @@ public class PropertyValidator {
     private PropertyUtil propertyUtil;
 
     @Autowired
+    private PropertyRepository propertyRepository;
+
+    @Autowired
     private ServiceRequestRepository serviceRequestRepository;
 
     @Value("${egov.mdms.host}")
@@ -36,36 +40,41 @@ public class PropertyValidator {
     @Value("${egov.mdms.search.endpoint}")
     private String mdmsEndpoint;
 
+
+
     /**
-     * Validates if the PropertyRequest contains RequestInfo and the RequestInfo contains UserInfo
-     *
-     * @param request
-     * @param errorMap
+     * Validate the masterData and ctizenInfo of the given propertyRequest
+     * @param request PropertyRequest for create
      */
-     public void validateRequestInfo(PropertyRequest request,Map<String,String> errorMap)
-     {
-
-         if(request.getRequestInfo()==null){
-             errorMap.put(ErrorConstants.EG_PT_REQUESTINFO_Key,ErrorConstants.EG_PT_REQUESTINFO_MSG);
-         }
-         else if(request.getRequestInfo().getUserInfo()==null){
-             errorMap.put("EG_PT_REQUESTINFO_USERINFO","UserInfo is mandatory for RequestInfo");
-         }
-
-
-         if (!errorMap.isEmpty())
-             throw new CustomException(errorMap);
-
+     public void validateCreateRequest(PropertyRequest request){
+         validateMasterData(request);
+         validateCitizenInfo(request);
      }
+
+    /**
+     * Validates the masterData,CitizenInfo and the authorization of the assessee for update
+     * @param request PropertyRequest for update
+     */
+    public void validateUpdateRequest(PropertyRequest request){
+        PropertyCriteria criteria = getPropertyCriteriaForSearch(request);
+        List<Property> propertiesFromSearchResponse = propertyRepository.getProperties(criteria);
+        boolean ifPropertyExists=PropertyExists(request,propertiesFromSearchResponse);
+        if(!ifPropertyExists)
+        {throw new CustomException("PROPERTY NOT FOUND","The property to be updated does not exist");}
+
+        validateMasterData(request);
+        validateCitizenInfo(request);
+        if(request.getRequestInfo().getUserInfo().getType().equalsIgnoreCase("CITIZEN"))
+            validateAssessees(request);
+    }
 
     /**
      * Validates if the fields in PropertyRequest are present in the MDMS master Data
      *
-     * @param request
-     *
+     * @param request PropertyRequest received for creating or update
      *
      */
-    public void validateMasterData(PropertyRequest request){
+    private void validateMasterData(PropertyRequest request){
       Map<String,String> errorMap = new HashMap<>();
       String tenantId = request.getProperties().get(0).getTenantId();
 
@@ -88,13 +97,13 @@ public class PropertyValidator {
     /**
      *Fetches all the values of particular attribute as map of fieldname to list
      *
-     * @param tenantId
-     * @param names
-     * @param requestInfo
-     * @return
+     * @param tenantId tenantId of properties in PropertyRequest
+     * @param names List of String containing the names of all masterdata whose code has to be extracted
+     * @param requestInfo RequestInfo of the received PropertyRequest
+     * @return Map of MasterData name to the list of code in the MasterData
      *
      */
-    public Map<String,List<String>> getAttributeValues(String tenantId, String moduleName, List<String> names, String filter, RequestInfo requestInfo){
+    private Map<String,List<String>> getAttributeValues(String tenantId, String moduleName, List<String> names, String filter, RequestInfo requestInfo){
         StringBuilder uri = new StringBuilder(mdmsHost).append(mdmsEndpoint);
         MdmsCriteriaReq criteriaReq = propertyUtil.prepareMdMsRequest(tenantId,moduleName,names,filter,requestInfo);
         try {
@@ -109,13 +118,13 @@ public class PropertyValidator {
     /**
      *Checks if the codes of all fields are in the list of codes obtain from master data
      *
-     * @param properties
-     * @param codes
-     * @param errorMap
-     * @return
+     * @param properties List of properties from PropertyRequest which are to validated
+     * @param codes Map of MasterData name to List of codes in that MasterData
+     * @param errorMap Map to fill all errors caught to send as custom Exception
+     * @return Error map containing error if existed
      *
      */
-   public static Map<String,String> validateCodes(List<Property> properties,Map<String,List<String>> codes,Map<String,String> errorMap){
+   private static Map<String,String> validateCodes(List<Property> properties,Map<String,List<String>> codes,Map<String,String> errorMap){
       log.info("Validating Property");
        properties.forEach(property -> {
            property.getPropertyDetails().forEach(propertyDetail -> {
@@ -188,6 +197,11 @@ public class PropertyValidator {
    }
 
 
+    /**
+     * Validates if MasterData is properly fetched for the given MasterData names
+     * @param masterNames
+     * @param codes
+     */
    private void validateMDMSData(String[] masterNames,Map<String,List<String>> codes){
        Map<String,String> errorMap = new HashMap<>();
        for(String masterName:masterNames){
@@ -202,8 +216,8 @@ public class PropertyValidator {
     /**
      * Returns PropertyCriteria to search for properties in database with ids set from properties in request
      *
-     * @param request
-     * @return
+     * @param request PropertyRequest received for update
+     * @return PropertyCriteria containg ids of all properties and all its childrens
      */
     public PropertyCriteria getPropertyCriteriaForSearch(PropertyRequest request) {
 
@@ -251,9 +265,9 @@ public class PropertyValidator {
     }
 
     /**
-     *
-     * @param propertyDetail
-     * @return
+     * Extract all ownerids from given propertyDetail
+     * @param propertyDetail PropertyDetail whose owner ids are to be returned
+     * @return Set of ids of all owners of the given propertyDetail
      */
     private Set<String> getOwnerids(PropertyDetail propertyDetail){
         Set<OwnerInfo> owners= propertyDetail.getOwners();
@@ -268,8 +282,8 @@ public class PropertyValidator {
 
     /**
      * Adds ids of all Units of property to a list
-     * @param propertyDetail
-     * @return List of all unitids of a propertyDetail
+     * @param propertyDetail PropertyDetail whose unit ids are to be returned
+     * @return Set of all unitids of a propertyDetail
      */
     private Set<String> getUnitids(PropertyDetail propertyDetail){
         Set<Unit> units= propertyDetail.getUnits();
@@ -284,8 +298,8 @@ public class PropertyValidator {
 
     /**
      * Adds ids of all Documents of property to a list
-     * @param propertyDetail
-     * @return List of all documentids of properyDetail
+     * @param propertyDetail PropertyDetail whose document ids are to be returned
+     * @return Set of all documentids of properyDetail
      */
     private Set<String> getDocumentids(PropertyDetail propertyDetail){
         Set<Document> documents= propertyDetail.getDocuments();
@@ -299,8 +313,8 @@ public class PropertyValidator {
 
     /**
      * Checks if the property ids in search response are same as in request
-     * @param request
-     * @param responseProperties
+     * @param request PropertyRequest received for update
+     * @param responseProperties List of properties received from property Search
      * @return
      */
     public boolean PropertyExists(PropertyRequest request,List<Property> responseProperties){
@@ -324,14 +338,19 @@ public class PropertyValidator {
      * @param list1
      * @param list2
      * @param <T>
-     * @return
+     * @return Boolean true if both list contains the same elements irrespective of order
      */
     private static <T> boolean listEqualsIgnoreOrder(List<T> list1, List<T> list2) {
         return new HashSet<>(list1).equals(new HashSet<>(list2));
     }
 
 
-    public void validateFinancialYear(PropertyRequest request,Map<String,String> errorMap){
+    /**
+     * Validates the financial year in PropertyRequest by comparing data from MDMS
+     * @param request PropertRequest received for update or create
+     * @param errorMap ErrorMap to catch all the errors
+     */
+    private void validateFinancialYear(PropertyRequest request,Map<String,String> errorMap){
       String tenantId = request.getProperties().get(0).getTenantId();
       RequestInfo requestInfo = request.getRequestInfo();
       request.getProperties().forEach(property ->
@@ -356,22 +375,31 @@ public class PropertyValidator {
         List<Property> properties = request.getProperties();
         properties.forEach(property -> {
             property.getPropertyDetails().forEach(propertyDetail -> {
-               if(propertyDetail.getInstitution()!=null){
+               if(propertyDetail.getInstitution()!=null && propertyDetail.getSubOwnershipCategory().equalsIgnoreCase("INSTITUTIONAL")){
                    if(propertyDetail.getInstitution().getType()==null)
                        errorMap.put(" INVALID INSTITUTION OBJECT ","The institutionType cannot be null ");
                    if(propertyDetail.getInstitution().getName()==null)
                        errorMap.put("INVALID INSTITUTION OBJECT","Institution name cannot be null");
+                   if(propertyDetail.getInstitution().getDesignation()==null)
+                       errorMap.put("INVALID INSTITUTION OBJECT","Designation cannot be null");
                }
                else if(!propertyDetail.getSubOwnershipCategory().equals("INSTITUTIONAL") && propertyDetail.getInstitution()!=null){
-                   errorMap.put(" INVALID INSTITUTION OBJECT ","The institution Object should be null. Type of OwnerShip is not Institution ");
+                   if(propertyDetail.getInstitution().getType()!=null || propertyDetail.getInstitution().getName()!=null
+                           || propertyDetail.getInstitution().getDesignation()!=null)
+                       errorMap.put(" INVALID INSTITUTION OBJECT ","The institution object should be null. SubOwnershipCategory is not equal to Institutional");
+                  else
+                   propertyDetail.setInstitution(null);
                }
             });
         });
     }
 
 
-
-    public void validateAssessees(PropertyRequest request){
+    /**
+     * Validates the UserInfo of the the PropertyRequest. Update is allowed only for the user who created the property
+     * @param request PropertyRequest received for update
+     */
+    private void validateAssessees(PropertyRequest request){
        String uuid = request.getRequestInfo().getUserInfo().getUuid();
         Map<String,String> errorMap = new HashMap<>();
         request.getProperties().forEach(property -> {
@@ -385,7 +413,11 @@ public class PropertyValidator {
             throw new CustomException(errorMap);
     }
 
-    public void validateCitizenInfo(PropertyRequest request){
+    /**
+     * Validates if property is created by employee the citizenInfo cannot be null
+     * @param request PropertyRequest received for create or update
+     */
+    private void validateCitizenInfo(PropertyRequest request){
         Map<String,String> errorMap = new HashMap<>();
         RequestInfo requestInfo = request.getRequestInfo();
         if(!requestInfo.getUserInfo().getType().equals("CITIZEN")){

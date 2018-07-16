@@ -1,6 +1,7 @@
 package org.egov.pt.repository.rowmapper;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.egov.common.contract.request.User;
 import org.egov.pt.web.models.*;
 import org.egov.pt.web.models.Property.CreationReasonEnum;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 @Component
 public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 
@@ -74,6 +75,7 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 
 		PropertyDetail detail = null;
 
+		//Search if the row contains new PropertyDetail or existing one
 		String assessmentNumber = rs.getString("assessmentNumber");
 		if(!CollectionUtils.isEmpty(property.getPropertyDetails())) {
 			for(PropertyDetail propertyDetail:property.getPropertyDetails()){
@@ -83,6 +85,8 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 				}
 			}
 		}
+
+		// If assessmentNumber not found in previous loop new PropertyDetail is created
 		if(detail==null) {
 			AuditDetails assessAuditdetails = AuditDetails.builder().createdBy(rs.getString("assesscreatedBy"))
 					.createdTime(rs.getLong("assesscreatedTime")).lastModifiedBy(rs.getString("assesslastModifiedBy"))
@@ -120,20 +124,6 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 
 		String tenantId = property.getTenantId();
 
-		Document ownerDocument = Document.builder().id(rs.getString("ownerdocid"))
-				.documentType(rs.getString("ownerdocType"))
-				.fileStore(rs.getString("ownerfileStore"))
-				.documentUid(rs.getString("ownerdocuid"))
-				.build();
-
-		OwnerInfo owner = OwnerInfo.builder().uuid(rs.getString("userid"))
-				          .isPrimaryOwner(rs.getBoolean("isPrimaryOwner"))
-				          .ownerType(rs.getString("ownerType"))
-				          .ownerShipPercentage(rs.getDouble("ownerShipPercentage"))
-				          .institutionId(rs.getString("institutionid"))
-				          .relationship(OwnerInfo.RelationshipEnum.fromValue(rs.getString("relationship")))
-				          .document(ownerDocument)
-				          .build();
 
 		Document document = Document.builder().id(rs.getString("documentid"))
 				.documentType(rs.getString("documentType"))
@@ -152,6 +142,20 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 				.build();
 
 
+		Document ownerDocument = Document.builder().id(rs.getString("ownerdocid"))
+				.documentType(rs.getString("ownerdocType"))
+				.fileStore(rs.getString("ownerfileStore"))
+				.documentUid(rs.getString("ownerdocuid"))
+				.build();
+
+		OwnerInfo owner = OwnerInfo.builder().uuid(rs.getString("userid"))
+				.isPrimaryOwner(rs.getBoolean("isPrimaryOwner"))
+				.ownerType(rs.getString("ownerType"))
+				.ownerShipPercentage(rs.getDouble("ownerShipPercentage"))
+				.institutionId(rs.getString("institutionid"))
+				.relationship(OwnerInfo.RelationshipEnum.fromValue(rs.getString("relationship")))
+				.build();
+
 		/*
 		 * add item methods of models are being used to avoid the null checks
 		 */
@@ -159,5 +163,14 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 		detail.addDocumentsItem(document);
 		detail.addUnitsItem(unit);
 
+		// Add owner document to the specific propertyDetail for which it was used
+		String docuserid = rs.getString("docuserid");
+		String docAssessmentNumber = rs.getString("docassessmentnumber");
+		if(assessmentNumber.equalsIgnoreCase(docAssessmentNumber)) {
+			detail.getOwners().forEach(ownerInfo -> {
+				if (docuserid.equalsIgnoreCase(ownerInfo.getUuid()))
+					ownerInfo.addDocumentsItem(ownerDocument);
+			});
+		}
 	}
 }

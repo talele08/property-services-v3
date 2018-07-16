@@ -45,8 +45,7 @@ public class PropertyService {
 	 * @return List of properties successfully created
 	 */
 	public List<Property> createProperty(PropertyRequest request) {
-		propertyValidator.validateMasterData(request);
-		propertyValidator.validateCitizenInfo(request);
+		propertyValidator.validateCreateRequest(request);
 		userService.createUser(request);
 		enrichmentService.enrichCreateRequest(request,false);
 		userService.createCitizen(request);
@@ -103,47 +102,16 @@ public class PropertyService {
 	 * @return List of updated properties
 	 */
 	public List<Property> updateProperty(PropertyRequest request) {
-		PropertyCriteria propertyCriteria = propertyValidator.getPropertyCriteriaForSearch(request);
-		List<Property> propertiesFromSearchResponse = searchProperty(propertyCriteria,request.getRequestInfo());
-		boolean ifPropertyExists=propertyValidator.PropertyExists(request,propertiesFromSearchResponse);
-		propertyValidator.validateCitizenInfo(request);
+		userService.createCitizen(request);
+		propertyValidator.validateUpdateRequest(request);
 
-		if(request.getRequestInfo().getUserInfo().getType().equalsIgnoreCase("CITIZEN"))
-		 propertyValidator.validateAssessees(request);
-
-
-		boolean paid = true;
-
-		/**
-		 * Call demand api to check if payment is done
-		 */
-		if(ifPropertyExists && !paid) {
-			enrichmentService.enrichUpdateRequest(request,propertiesFromSearchResponse);
-			userService.updateUser(request);
-			producer.push(config.getUpdatePropertyTopic(), request);
-			return request.getProperties();
-		}
-		else if(ifPropertyExists && paid){
-			enrichmentService.enrichCreateRequest(request,true);
-			userService.createUser(request);
-			userService.createCitizen(request);
-			producer.push(config.getUpdatePropertyTopic(), request);
-			return request.getProperties();
-		}
-		else
-		{    throw new CustomException("PROPERTY NOT FOUND","The property to be updated does not exist");  // Change the error code
-		}
+		enrichmentService.enrichCreateRequest(request,true);
+		userService.createUser(request);
+		producer.push(config.getUpdatePropertyTopic(), request);
+		return request.getProperties();
 	}
 
-	/*private List<Property> createPropertyDetail(PropertyRequest request){
-		userService.createUser(request);
-		enrichmentService.enrichCreateRequest(request,true);This is in sharp contrast to the way most VCS tools branch, which involves copying all of the project’s files into a second directory. This can take several seconds or even minutes, depending on the size of the project, whereas in Git the process is always instantaneous. Also, because we’re recording the parents when we commit, finding a proper merge base for merging is automatically done for us and is generally very easy to do. These features help encourage developers to create and use branches often.
 
-
-		propertyValidator.validateMasterData(request);
-		producer.push(config.getSavePropertyTopic(), request);
-		return request.getProperties();
-	}*/
 
 
 

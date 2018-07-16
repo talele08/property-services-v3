@@ -67,8 +67,10 @@ public class EnrichmentService {
                      });
                    }
                    propertyDetail.getOwners().forEach(owner -> {
-                       if(owner.getDocument()!=null)
-                           owner.getDocument().setId(UUID.randomUUID().toString());
+                       if(!CollectionUtils.isEmpty(owner.getDocuments()))
+                           owner.getDocuments().forEach(document -> {
+                               document.setId(UUID.randomUUID().toString());
+                           });
                    });
                 }
             });

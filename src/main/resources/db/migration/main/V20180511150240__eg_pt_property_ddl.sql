@@ -129,6 +129,7 @@ CREATE TABLE eg_pt_document_owner_v2 (
   lastmodifiedtime bigint,
 
   CONSTRAINT pk_eg_pt_document_owner_v2 PRIMARY KEY (id),
+  CONSTRAINT uk_eg_pt_document_owner_v2 UNIQUE (userid, propertydetail),
   CONSTRAINT fk_eg_pt_document_owner_v2 FOREIGN KEY (userid, propertydetail) REFERENCES eg_pt_owner_v2 (userid, propertydetail)
 );
 

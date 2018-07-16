@@ -14,13 +14,15 @@ import java.util.Map;
 @Repository
 @Slf4j
 public class ServiceRequestRepository {
+
+	@Autowired
+	private ObjectMapper mapper;
 		
 	@Autowired
 	private LogAwareRestTemplate restTemplate;
 		
 
 	public Object fetchResult(StringBuilder uri, Object request) {
-		ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 		Object response = null;
 		log.info("URI: "+uri.toString());

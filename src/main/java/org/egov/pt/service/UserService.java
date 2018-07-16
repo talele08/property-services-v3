@@ -21,6 +21,9 @@ import java.util.*;
 public class UserService {
 
     @Autowired
+    private ObjectMapper mapper;
+
+    @Autowired
     private ServiceRequestRepository serviceRequestRepository;
 
     @Value("${egov.user.host}")
@@ -157,7 +160,6 @@ public class UserService {
         try{
             LinkedHashMap responseMap = (LinkedHashMap)serviceRequestRepository.fetchResult(uri, userRequest);
             parseResponse(responseMap,dobFormat);
-            ObjectMapper mapper = new ObjectMapper();
             UserDetailResponse userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
             return userDetailResponse;
           }
@@ -236,7 +238,6 @@ public class UserService {
         userSearchRequest.setRequestInfo(requestInfo);
         userSearchRequest.setTenantId(criteria.getTenantId());
         userSearchRequest.setMobileNumber(criteria.getMobileNumber());
-     //   userSearchRequest.setUserName(criteria.getUserName());
         userSearchRequest.setName(criteria.getName());
         userSearchRequest.setActive(true);
         return userSearchRequest;
