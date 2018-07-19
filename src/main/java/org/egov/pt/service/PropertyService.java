@@ -63,23 +63,23 @@ public class PropertyService {
 		List<Property> properties;
 		if(criteria.getMobileNumber()!=null || criteria.getName()!=null)
 		{   UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
-		    // If user not found with given user fields return empty list
-		    if(userDetailResponse.getUser().size()==0){
-		    	return new ArrayList<>();
+			// If user not found with given user fields return empty list
+			if(userDetailResponse.getUser().size()==0){
+				return Collections.emptyList();
 			}
 			enrichmentService.enrichPropertyCriteriaWithOwnerids(criteria,userDetailResponse);
 			properties = repository.getProperties(criteria);
 			// If property not found with given propertyId or oldPropertyId or address fields return empty list
 			if(properties.size()==0){
-				return new ArrayList<>();
+				return Collections.emptyList();
 			}
 			criteria=enrichmentService.getPropertyCriteriaFromPropertyIds(properties);
 			properties = getPropertiesWithOwnerInfo(criteria,requestInfo);
 		}
-	    else{
+		else{
 			properties = getPropertiesWithOwnerInfo(criteria,requestInfo);
-	   }
-		  return properties;
+		}
+		return properties;
 	}
 
 	/**

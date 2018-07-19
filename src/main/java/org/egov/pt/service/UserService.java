@@ -46,7 +46,6 @@ public class UserService {
      * @param request PropertyRequest received for creating properties
      */
     public void createUser(PropertyRequest request){
-        StringBuilder uri = new StringBuilder(userHost).append(userContextPath).append(userCreateEndpoint);
         List<Property> properties = request.getProperties();
         RequestInfo requestInfo = request.getRequestInfo();
         properties.forEach(property -> {
@@ -62,13 +61,22 @@ public class UserService {
                         if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
                         {   /* Sets userName equal to mobileNumber if mobileNumber already assigned as username
                           random number is assigned as username */
+                            StringBuilder uri = new StringBuilder(userHost).append(userContextPath).append(userCreateEndpoint);
                             setUserName(owner,listOfMobileNumbers);
                             owner.setActive(true);
                             userDetailResponse = userCall(new CreateUserRequest(requestInfo,owner),uri);
                             log.info("owner created --> "+userDetailResponse.getUser().get(0).getUuid());
                         }
+                        else
+                        { log.info("User update -> ","MobileNumber: ",owner.getMobileNumber()," Name: ",owner.getName());
+                          owner.setId(userDetailResponse.getUser().get(0).getId());
+                          owner.setActive(true);
+                          StringBuilder uri = new StringBuilder(userHost).append(userContextPath).append(owner.getId())
+                                              .append(userUpdateEndpoint);
+                          userDetailResponse = userCall( new CreateUserRequest(requestInfo,owner),uri);
+                        }
                         // Assigns value of fields from user got from userDetailResponse to owner object
-                        setOwnerFields(owner,userDetailResponse);
+                        setOwnerFields(owner,userDetailResponse,requestInfo);
                     }
                 });
             });
@@ -89,7 +97,7 @@ public class UserService {
         userSearchRequest.setRequestInfo(requestInfo);
         userSearchRequest.setActive(true);
         if(owner.getUuid()!=null)
-         userSearchRequest.setUuid(Arrays.asList(owner.getUuid()));
+            userSearchRequest.setUuid(Arrays.asList(owner.getUuid()));
         StringBuilder uri = new StringBuilder(userHost).append(userSearchEndpoint);
         return userCall(userSearchRequest,uri);
     }
@@ -117,19 +125,21 @@ public class UserService {
      * @param propertyDetail whose unique mobileNumbers are needed to be fetched
      * @return list of all unique mobileNumbers in the given propertyDetail
      */
-    private Set<String> getMobileNumbers(PropertyDetail propertyDetail,String tenantId){
+     private Set<String> getMobileNumbers(PropertyDetail propertyDetail,String tenantId){
         Set<String> listOfMobileNumbers = new HashSet<>();
         propertyDetail.getOwners().forEach(owner -> {listOfMobileNumbers.add(owner.getMobileNumber());});
         StringBuilder uri = new StringBuilder(userHost).append(userSearchEndpoint);
         UserSearchRequest userSearchRequest = new UserSearchRequest();
         userSearchRequest.setTenantId(tenantId);
+        Set<String> availableMobileNumbers = new HashSet<>();
+
         listOfMobileNumbers.forEach(mobilenumber -> {
             userSearchRequest.setMobileNumber(mobilenumber);
             UserDetailResponse userDetailResponse =  userCall(userSearchRequest,uri);
-            if(!CollectionUtils.isEmpty(userDetailResponse.getUser()))
-                listOfMobileNumbers.remove(mobilenumber);
+            if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
+                availableMobileNumbers.add(mobilenumber);
         });
-        return listOfMobileNumbers;
+        return availableMobileNumbers;
     }
 
     /**
@@ -162,8 +172,8 @@ public class UserService {
             parseResponse(responseMap,dobFormat);
             UserDetailResponse userDetailResponse = mapper.convertValue(responseMap,UserDetailResponse.class);
             return userDetailResponse;
-          }
-          // Which Exception to throw?
+        }
+        // Which Exception to throw?
         catch(Exception e)
         {
             log.error("uri does not contain appropriate endpoint");
@@ -181,14 +191,14 @@ public class UserService {
         List<LinkedHashMap> users = (List<LinkedHashMap>)responeMap.get("user");
         String format1 = "dd-MM-yyyy HH:mm:ss";
         users.forEach( map -> {
-            map.put("createdDate",dateTolong((String)map.get("createdDate"),format1));
-            if((String)map.get("lastModifiedDate")!=null)
-                map.put("lastModifiedDate",dateTolong((String)map.get("lastModifiedDate"),format1));
-            if((String)map.get("dob")!=null)
-                map.put("dob",dateTolong((String)map.get("dob"),dobFormat));
-            if((String)map.get("pwdExpiryDate")!=null)
-                map.put("pwdExpiryDate",dateTolong((String)map.get("pwdExpiryDate"),format1));
-         }
+                    map.put("createdDate",dateTolong((String)map.get("createdDate"),format1));
+                    if((String)map.get("lastModifiedDate")!=null)
+                        map.put("lastModifiedDate",dateTolong((String)map.get("lastModifiedDate"),format1));
+                    if((String)map.get("dob")!=null)
+                        map.put("dob",dateTolong((String)map.get("dob"),dobFormat));
+                    if((String)map.get("pwdExpiryDate")!=null)
+                        map.put("pwdExpiryDate",dateTolong((String)map.get("pwdExpiryDate"),format1));
+                }
         );
     }
 
@@ -214,13 +224,13 @@ public class UserService {
      * @param owner Owner in the propertyDetail whose user is created
      * @param userDetailResponse userDetailResponse from the user Service corresponding to the given owner
      */
-    private void setOwnerFields(OwnerInfo owner, UserDetailResponse userDetailResponse){
+    private void setOwnerFields(OwnerInfo owner, UserDetailResponse userDetailResponse,RequestInfo requestInfo){
         owner.setUuid(userDetailResponse.getUser().get(0).getUuid());
         owner.setUserName((userDetailResponse.getUser().get(0).getUserName()));
-        owner.setCreatedBy(userDetailResponse.getUser().get(0).getCreatedBy());
-        owner.setCreatedDate(userDetailResponse.getUser().get(0).getCreatedDate());
-        owner.setLastModifiedBy(userDetailResponse.getUser().get(0).getLastModifiedBy());
-        owner.setLastModifiedDate(userDetailResponse.getUser().get(0).getLastModifiedDate());
+        owner.setCreatedBy(requestInfo.getUserInfo().getUuid());
+        owner.setCreatedDate(System.currentTimeMillis());
+        owner.setLastModifiedBy(requestInfo.getUserInfo().getUuid());
+        owner.setLastModifiedDate(System.currentTimeMillis());
         owner.setActive(userDetailResponse.getUser().get(0).getActive());
     }
 
@@ -234,7 +244,7 @@ public class UserService {
         UserSearchRequest userSearchRequest = new UserSearchRequest();
         Set<String> userIds = criteria.getOwnerids();
         if(!CollectionUtils.isEmpty(userIds))
-         userSearchRequest.setUuid( new ArrayList(userIds));
+            userSearchRequest.setUuid( new ArrayList(userIds));
         userSearchRequest.setRequestInfo(requestInfo);
         userSearchRequest.setTenantId(criteria.getTenantId());
         userSearchRequest.setMobileNumber(criteria.getMobileNumber());
@@ -261,10 +271,10 @@ public class UserService {
                     }
                     else
                     { owner.setId(userDetailResponse.getUser().get(0).getId());
-                      uri=uri.append(userContextPath).append(owner.getId()).append(userUpdateEndpoint);
+                        uri=uri.append(userContextPath).append(owner.getId()).append(userUpdateEndpoint);
                     }
                     userDetailResponse = userCall( new CreateUserRequest(requestInfo,owner),uri);
-                    setOwnerFields(owner,userDetailResponse);
+                    setOwnerFields(owner,userDetailResponse,requestInfo);
                 });
             });
         });
@@ -281,33 +291,33 @@ public class UserService {
         // If user is creating assessment, userInfo object from requestInfo is assigned as citizenInfo
         if(requestInfo.getUserInfo().getType().equals("CITIZEN"))
         {   request.getProperties().forEach(property -> {
-                property.getPropertyDetails().forEach(propertyDetail -> {
-                    propertyDetail.setCitizenInfo(new OwnerInfo(requestInfo.getUserInfo()));
-                });
+            property.getPropertyDetails().forEach(propertyDetail -> {
+                propertyDetail.setCitizenInfo(new OwnerInfo(requestInfo.getUserInfo()));
             });
+        });
         }
         else{
-        // In case of employee login it checks if the citizenInfo object is present else it creates it
-        request.getProperties().forEach(property -> {
-            property.getPropertyDetails().forEach(propertyDetail -> {
-                UserDetailResponse userDetailResponse = userExists(propertyDetail.getCitizenInfo(),requestInfo);
-                // If user not present new user is created
-                if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
-                {   UserSearchRequest userSearchRequest = new UserSearchRequest();
-                    userSearchRequest.setTenantId(property.getTenantId());
-                    userSearchRequest.setMobileNumber(propertyDetail.getCitizenInfo().getMobileNumber());
-                    userDetailResponse =  userCall(userSearchRequest,uriSearch);
-                    if(!CollectionUtils.isEmpty(userDetailResponse.getUser()))
-                        propertyDetail.getCitizenInfo().setUserName(UUID.randomUUID().toString());
-                    else
-                        propertyDetail.getCitizenInfo().setUserName(propertyDetail.getCitizenInfo().getMobileNumber());
-                    propertyDetail.getCitizenInfo().setActive(true);
-                    userDetailResponse = userCall(new CreateUserRequest(requestInfo,propertyDetail.getCitizenInfo()),uriCreate);
-                    log.info("citizen created --> "+userDetailResponse.getUser().get(0).getUuid());
-                }
-                propertyDetail.setCitizenInfo(userDetailResponse.getUser().get(0));
+            // In case of employee login it checks if the citizenInfo object is present else it creates it
+            request.getProperties().forEach(property -> {
+                property.getPropertyDetails().forEach(propertyDetail -> {
+                    UserDetailResponse userDetailResponse = userExists(propertyDetail.getCitizenInfo(),requestInfo);
+                    // If user not present new user is created
+                    if(CollectionUtils.isEmpty(userDetailResponse.getUser()))
+                    {   UserSearchRequest userSearchRequest = new UserSearchRequest();
+                        userSearchRequest.setTenantId(property.getTenantId());
+                        userSearchRequest.setMobileNumber(propertyDetail.getCitizenInfo().getMobileNumber());
+                        userDetailResponse =  userCall(userSearchRequest,uriSearch);
+                        if(!CollectionUtils.isEmpty(userDetailResponse.getUser()))
+                            propertyDetail.getCitizenInfo().setUserName(UUID.randomUUID().toString());
+                        else
+                            propertyDetail.getCitizenInfo().setUserName(propertyDetail.getCitizenInfo().getMobileNumber());
+                        propertyDetail.getCitizenInfo().setActive(true);
+                        userDetailResponse = userCall(new CreateUserRequest(requestInfo,propertyDetail.getCitizenInfo()),uriCreate);
+                        log.info("citizen created --> "+userDetailResponse.getUser().get(0).getUuid());
+                    }
+                    propertyDetail.setCitizenInfo(userDetailResponse.getUser().get(0));
+                });
             });
-         });
         }
 
     }

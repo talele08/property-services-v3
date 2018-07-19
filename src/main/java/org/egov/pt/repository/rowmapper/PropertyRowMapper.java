@@ -93,15 +93,18 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 					.lastModifiedTime(rs.getLong("assesslastModifiedTime"))
 					.build();
 
-			Institution institution = Institution.builder()
+			Institution institution = null;
+			if(rs.getString("instiid")!=null)
+			{ institution = Institution.builder()
 					.id(rs.getString("instiid"))
 					.tenantId(rs.getString("institenantId"))
 					.name(rs.getString("institutionName"))
 					.type(rs.getString("institutionType"))
 					.designation(rs.getString("designation"))
 					.build();
+			}
 
-            OwnerInfo citizenInfo = OwnerInfo.builder().uuid(rs.getString("accountId")).build();
+			OwnerInfo citizenInfo = OwnerInfo.builder().uuid(rs.getString("accountId")).build();
 			detail = PropertyDetail.builder()
 					.additionalDetails(rs.getObject("additionalDetails")).buildUpArea(rs.getFloat("buildUpArea"))
 					.channel(ChannelEnum.fromValue(rs.getString("channel"))).landArea(rs.getFloat("landArea"))
@@ -125,21 +128,35 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 		String tenantId = property.getTenantId();
 
 
-		Document document = Document.builder().id(rs.getString("documentid"))
+		if(rs.getString("documentid")!=null)
+		{Document document = Document.builder().id(rs.getString("documentid"))
 				.documentType(rs.getString("documentType"))
 				.fileStore(rs.getString("fileStore"))
 				.documentUid(rs.getString("documentuid"))
 				.build();
+			detail.addDocumentsItem(document);
+		}
 
 
-		Unit unit = Unit.builder().id(rs.getString("unitid")).floorNo(rs.getString("floorNo")).tenantId(tenantId)
-				.unitArea(rs.getFloat("unitArea")).unitType(rs.getString("unitType")).usageCategoryMajor(rs.getString("usageCategoryMajor"))
-				.usageCategoryMinor(rs.getString("usageCategoryMinor")).usageCategorySubMinor(rs.getString("usageCategorySubMinor"))
+		if(rs.getString("unitid")!=null)
+		{Unit unit = Unit.builder().id(rs.getString("unitid"))
+				.floorNo(rs.getString("floorNo"))
+				.tenantId(tenantId)
+				.unitArea(rs.getFloat("unitArea"))
+				.unitType(rs.getString("unitType"))
+				.usageCategoryMajor(rs.getString("usageCategoryMajor"))
+				.usageCategoryMinor(rs.getString("usageCategoryMinor"))
+				.usageCategorySubMinor(rs.getString("usageCategorySubMinor"))
 				.usageCategoryDetail(rs.getString("usageCategoryDetail"))
 				.occupancyType(rs.getString("occupancyType"))
-				.occupancyDate(rs.getLong("occupancyDate")).constructionType(rs.getString("constructionType"))
-				.constructionSubType(rs.getString("constructionSubType")).arv(rs.getBigDecimal("arv"))
+				.occupancyDate(rs.getLong("unitoccupancyDate"))
+				.constructionType(rs.getString("constructionType"))
+				.constructionSubType(rs.getString("constructionSubType"))
+				.arv(rs.getBigDecimal("arv"))
 				.build();
+			detail.addUnitsItem(unit);
+		}
+
 
 
 		Document ownerDocument = Document.builder().id(rs.getString("ownerdocid"))
@@ -160,13 +177,11 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 		 * add item methods of models are being used to avoid the null checks
 		 */
 		detail.addOwnersItem(owner);
-		detail.addDocumentsItem(document);
-		detail.addUnitsItem(unit);
 
 		// Add owner document to the specific propertyDetail for which it was used
 		String docuserid = rs.getString("docuserid");
 		String docAssessmentNumber = rs.getString("docassessmentnumber");
-		if(assessmentNumber.equalsIgnoreCase(docAssessmentNumber)) {
+		if(assessmentNumber.equalsIgnoreCase(docAssessmentNumber) && docuserid!=null) {
 			detail.getOwners().forEach(ownerInfo -> {
 				if (docuserid.equalsIgnoreCase(ownerInfo.getUuid()))
 					ownerInfo.addDocumentsItem(ownerDocument);

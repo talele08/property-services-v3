@@ -5,6 +5,7 @@ import org.egov.pt.config.PropertyConfiguration;
 import org.egov.pt.repository.IdGenRepository;
 import org.egov.pt.util.PropertyUtil;
 import org.egov.pt.web.models.*;
+import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -34,49 +35,46 @@ public class EnrichmentService {
      */
     public void enrichCreateRequest(PropertyRequest request,Boolean onlyPropertyDetail) {
         RequestInfo requestInfo = request.getRequestInfo();
-        AuditDetails auditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getUuid(), !onlyPropertyDetail);
-
+        AuditDetails propertyAuditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getUuid(), !onlyPropertyDetail);
+        AuditDetails assessmentAuditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getUuid(),true);
 
         for (Property property : request.getProperties()) {
-             if(!onlyPropertyDetail)
-              property.getAddress().setId(UUID.randomUUID().toString());
-             property.getAddress().setTenantId(property.getTenantId());
-             property.setAuditDetails(auditDetails);
-             property.setStatus(PropertyInfo.StatusEnum.ACTIVE);
-             setAssessmentNo(property.getTenantId(),property.getPropertyDetails(),requestInfo);
-             property.getPropertyDetails().forEach(propertyDetail -> {
-             //   if(propertyDetail.getAssessmentNumber()==null)
+            if(!onlyPropertyDetail)
+                property.getAddress().setId(UUID.randomUUID().toString());
+            property.getAddress().setTenantId(property.getTenantId());
+            property.setAuditDetails(propertyAuditDetails);
+            property.setStatus(PropertyInfo.StatusEnum.ACTIVE);
+            setAssessmentNo(property.getTenantId(),property.getPropertyDetails(),requestInfo);
+            property.getPropertyDetails().forEach(propertyDetail -> {
+                //   if(propertyDetail.getAssessmentNumber()==null)
                 {
-                  propertyDetail.setTenantId(property.getTenantId());
-                  propertyDetail.setAuditDetails(auditDetails);
-                  if(onlyPropertyDetail){
-                      propertyDetail.getAuditDetails().setCreatedBy(requestInfo.getUserInfo().getUuid());
-                      propertyDetail.getAuditDetails().setCreatedTime(System.currentTimeMillis());
-                  }
-                  propertyDetail.getUnits().forEach(unit -> {
-                      unit.setId(UUID.randomUUID().toString());
-                      unit.setTenantId(property.getTenantId());});
-                  if( propertyDetail.getDocuments()!=null)
-                   propertyDetail.getDocuments().forEach(document -> document.setId(UUID.randomUUID().toString()));
-                  propertyDetail.setAssessmentDate(System.currentTimeMillis());
-                  if(propertyDetail.getSubOwnershipCategory().equals("INSTITUTIONAL"))
-                   { propertyDetail.getInstitution().setId(UUID.randomUUID().toString());
-                     propertyDetail.getInstitution().setTenantId(property.getTenantId());
-                     propertyDetail.getOwners().forEach(owner -> {
-                         owner.setInstitutionId(propertyDetail.getInstitution().getId());
-                     });
-                   }
-                   propertyDetail.getOwners().forEach(owner -> {
-                       if(!CollectionUtils.isEmpty(owner.getDocuments()))
-                           owner.getDocuments().forEach(document -> {
-                               document.setId(UUID.randomUUID().toString());
-                           });
-                   });
+                    propertyDetail.setTenantId(property.getTenantId());
+                    propertyDetail.setAuditDetails(assessmentAuditDetails);
+                    if(!CollectionUtils.isEmpty(propertyDetail.getUnits()))
+                        propertyDetail.getUnits().forEach(unit -> {
+                            unit.setId(UUID.randomUUID().toString());
+                            unit.setTenantId(property.getTenantId());});
+                    if( propertyDetail.getDocuments()!=null)
+                        propertyDetail.getDocuments().forEach(document -> document.setId(UUID.randomUUID().toString()));
+                    propertyDetail.setAssessmentDate(System.currentTimeMillis());
+                    if(propertyDetail.getSubOwnershipCategory().equals("INSTITUTIONAL"))
+                    { propertyDetail.getInstitution().setId(UUID.randomUUID().toString());
+                        propertyDetail.getInstitution().setTenantId(property.getTenantId());
+                        propertyDetail.getOwners().forEach(owner -> {
+                            owner.setInstitutionId(propertyDetail.getInstitution().getId());
+                        });
+                    }
+                    propertyDetail.getOwners().forEach(owner -> {
+                        if(!CollectionUtils.isEmpty(owner.getDocuments()))
+                            owner.getDocuments().forEach(document -> {
+                                document.setId(UUID.randomUUID().toString());
+                            });
+                    });
                 }
             });
         }
         if(!onlyPropertyDetail)
-         setIdgenIds(request);
+            setIdgenIds(request);
     }
 
     /**
@@ -89,9 +87,9 @@ public class EnrichmentService {
         AuditDetails auditDetails = propertyutil.getAuditDetails(requestInfo.getUserInfo().getId().toString(), false);
 
         /*Map of propertyId to property is created from the responseproperty list
-        * Not required if address id is sent in request was used before when one to one mapping was
-        * present between property and propertyDetail
-        * */
+         * Not required if address id is sent in request was used before when one to one mapping was
+         * present between property and propertyDetail
+         * */
         Map<String,Property> idToProperty = new HashMap<>();
         propertiesFromResponse.forEach(propertyFromResponse -> {
             idToProperty.put(propertyFromResponse.getPropertyId(),propertyFromResponse);
@@ -99,7 +97,7 @@ public class EnrichmentService {
 
         /*For every Property if id of any subfield is null new uuid is assigned
          *
-          * */
+         * */
         for (Property property : request.getProperties()){
             property.setAuditDetails(auditDetails);
 
@@ -161,6 +159,17 @@ public class EnrichmentService {
         ListIterator<String> itAck = acknowledgementNumbers.listIterator();
         ListIterator<String> itPt = propertyIds.listIterator();
 
+        Map<String,String> errorMap = new HashMap<>();
+        if(acknowledgementNumbers.size()!=request.getProperties().size()){
+            errorMap.put("IdGen ERROR ","The number of acknowledgementNumbers returned by idgen is not equal to number of properties");
+        }
+        if(propertyIds.size()!=request.getProperties().size()){
+            errorMap.put("IdGen ERROR ","The number of propertyIds returned by idgen is not equal to number of properties");
+        }
+
+        if(!errorMap.isEmpty())
+            throw new CustomException(errorMap);
+
         properties.forEach(property -> {
             property.setAcknowldgementNumber(itAck.next());
             property.setPropertyId(itPt.next());
@@ -178,6 +187,10 @@ public class EnrichmentService {
         int numOfPropertyDetails = propertyDetails.size();
         List<String> assessmentNumbers = getIdList(requestInfo,tenantId,config.getAssessmentIdGenName(),config.getAssessmentIdGenFormat(),numOfPropertyDetails);
         ListIterator<String> itAssess = assessmentNumbers.listIterator();
+        Map<String,String> errorMap = new HashMap<>();
+        if(assessmentNumbers.size()!=propertyDetails.size()){
+            errorMap.put("IdGen ERROR ","The number of assessmentNumbers returned by idgen is not equal to number of propertyDetails");
+        }
         propertyDetails.forEach(propertyDetail -> {
             propertyDetail.setAssessmentNumber(itAssess.next());
         });
@@ -196,7 +209,7 @@ public class EnrichmentService {
         properties.forEach(property -> {
             property.getPropertyDetails().forEach(propertyDetail ->
             {propertyDetail.getOwners().forEach(owner -> owner.addUserDetail(userIdToOwnerMap.get(owner.getUuid())));
-             propertyDetail.getCitizenInfo().addCitizenDetail(userIdToOwnerMap.get(propertyDetail.getCitizenInfo().getUuid()));
+                propertyDetail.getCitizenInfo().addCitizenDetail(userIdToOwnerMap.get(propertyDetail.getCitizenInfo().getUuid()));
             });
         });
     }

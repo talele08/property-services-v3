@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import lombok.*;
 import org.egov.common.contract.request.RequestInfo;
@@ -31,6 +33,8 @@ public class PropertyRequest   {
 
         @JsonProperty("Properties")
         @Valid
+        @NotNull
+        @Size(min=1)
         private List<Property> properties;
 
 

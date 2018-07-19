@@ -1,5 +1,6 @@
 package org.egov.pt.repository.builder;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -13,14 +14,14 @@ public class PropertyQueryBuilder {
 
 	private static final String INNER_JOIN_STRING = "INNER JOIN";
 	private static final String LEFT_OUTER_JOIN_STRING = "LEFT OUTER JOIN";
-	
+
 	private static final String QUERY = "SELECT pt.*,ptdl.*,address.*,owner.*,doc.*,unit.*,insti.*,"
 			+ " pt.propertyid as propertyid,ptdl.assessmentnumber as propertydetailid,doc.id as documentid,unit.id as unitid,"
 			+ "address.id as addresskeyid,insti.id as instiid,"
 			+ "ownerdoc.id as ownerdocid,ownerdoc.documenttype as ownerdocType,ownerdoc.filestore as ownerfileStore,"
 			+ "ownerdoc.documentuid as ownerdocuid,"
 			+ "ptdl.createdby as assesscreatedby,ptdl.lastModifiedBy as assesslastModifiedBy,ptdl.createdTime as assesscreatedTime,"
-			+ "ptdl.lastModifiedTime as assesslastModifiedTime,"
+			+ "ptdl.lastModifiedTime as assesslastModifiedTime,unit.occupancyDate as unitoccupancyDate,"
 			+ "insti.name as institutionname,insti.type as institutiontype,insti.tenantid as institenantId,"
 			+ "ownerdoc.userid as docuserid,ownerdoc.propertydetail as docassessmentnumber"
 			+ " FROM eg_pt_property_v2 pt "
@@ -29,9 +30,9 @@ public class PropertyQueryBuilder {
 			+ INNER_JOIN_STRING
 			+ " eg_pt_owner_v2 owner ON ptdl.assessmentnumber=owner.propertydetail "
 			+ INNER_JOIN_STRING
-			+ " eg_pt_unit_v2 unit ON ptdl.assessmentnumber=unit.propertydetail "
-			+ INNER_JOIN_STRING
 			+" eg_pt_address_v2 address on address.property=pt.propertyid "
+			+ LEFT_OUTER_JOIN_STRING
+			+ " eg_pt_unit_v2 unit ON ptdl.assessmentnumber=unit.propertydetail "
 			+ LEFT_OUTER_JOIN_STRING
 			+ " eg_pt_document_propertydetail_v2 doc ON ptdl.assessmentnumber=doc.propertydetail "
 			+ LEFT_OUTER_JOIN_STRING
@@ -39,75 +40,78 @@ public class PropertyQueryBuilder {
 			+ LEFT_OUTER_JOIN_STRING
 			+ " eg_pt_institution_v2 insti ON ptdl.assessmentnumber=insti.propertydetail "
 			+ " WHERE ";
-	
+
 	public String getPropertySearchQuery(PropertyCriteria criteria, List<Object> preparedStmtList) {
-		
+
 		StringBuilder builder = new StringBuilder(QUERY);
 		builder.append(" pt.tenantid=? ");
 		preparedStmtList.add(criteria.getTenantId());
-		
+
 		Set<String> ids = criteria.getIds();
 		if(!CollectionUtils.isEmpty(ids)) {
-			
-			builder.append("and pt.propertyid IN (").append(convertSetToString(ids)).append(")");
 
+			builder.append("and pt.propertyid IN (").append(createQuery(ids)).append(")");
+			addToPreparedStatement(preparedStmtList,ids);
 		}
 
 		Set<String> oldpropertyids = criteria.getOldpropertyids();
 		if(!CollectionUtils.isEmpty(oldpropertyids)) {
 
-			builder.append("and pt.oldpropertyid IN (").append(convertSetToString(oldpropertyids)).append(")");
-
+			builder.append("and pt.oldpropertyid IN (").append(createQuery(oldpropertyids)).append(")");
+			addToPreparedStatement(preparedStmtList,oldpropertyids);
 		}
 
 		Set<String> propertyDetailids = criteria.getPropertyDetailids();
 		if(!CollectionUtils.isEmpty(propertyDetailids)) {
 
-			builder.append("and ptdl.assessmentnumber IN (").append(convertSetToString(propertyDetailids)).append(")");
-
+			builder.append("and ptdl.assessmentnumber IN (").append(createQuery(propertyDetailids)).append(")");
+			addToPreparedStatement(preparedStmtList,propertyDetailids);
 		}
 
 		Set<String> addressids = criteria.getAddressids();
 		if(!CollectionUtils.isEmpty(addressids)) {
 
-			builder.append("and address.id IN (").append(convertSetToString(addressids)).append(")");
-
+			builder.append("and address.id IN (").append(createQuery(addressids)).append(")");
+			addToPreparedStatement(preparedStmtList,addressids);
 		}
 
 		Set<String> ownerids = criteria.getOwnerids();
 		if(!CollectionUtils.isEmpty(ownerids)) {
 
-			builder.append("and owner.userid IN (").append(convertSetToString(ownerids)).append(")");
-
+			builder.append("and owner.userid IN (").append(createQuery(ownerids)).append(")");
+			addToPreparedStatement(preparedStmtList,ownerids);
 		}
 
 		Set<String> unitids = criteria.getUnitids();
 		if(!CollectionUtils.isEmpty(unitids)) {
 
-			builder.append("and unit.id IN (").append(convertSetToString(unitids)).append(")");
-
+			builder.append("and unit.id IN (").append(createQuery(unitids)).append(")");
+			addToPreparedStatement(preparedStmtList,unitids);
 		}
 
 		Set<String> documentids = criteria.getDocumentids();
 		if(!CollectionUtils.isEmpty(documentids)) {
 
-			builder.append("and doc.id IN (").append(convertSetToString(documentids)).append(")");
-
+			builder.append("and doc.id IN (").append(createQuery(documentids)).append(")");
+			addToPreparedStatement(preparedStmtList,documentids);
 		}
 
 		if(criteria.getDoorNo()!=null && criteria.getLocality()!=null){
-			builder.append(" and address.doorno = '").append(criteria.getDoorNo()).append("' and address.locality = '").append(criteria.getLocality()).append("'");
+			builder.append(" and address.doorno = ? ").append(" and address.locality = ? ");
+			preparedStmtList.add(criteria.getDoorNo());
+			preparedStmtList.add(criteria.getLocality());
 		}
 
 		if(criteria.getAccountId()!=null) {
-			builder.append(" and ptdl.accountid = '").append(criteria.getAccountId()).append("'");
+			builder.append(" and ptdl.accountid = ? ");
+			preparedStmtList.add(criteria.getAccountId());
 		}
 
 		return builder.toString();
 	}
-	
-	private String convertSetToString(Set<String> ids) {
-		
+
+	/*private String createQuery(Set<String> ids) {
+
 		final String quotes = "'";
 		final String comma = ",";
 		StringBuilder builder = new StringBuilder();
@@ -117,5 +121,22 @@ public class PropertyQueryBuilder {
 			if(iterator.hasNext()) builder.append(comma);
 		}
 		return builder.toString();
+	}*/
+
+
+	private String createQuery(Set<String> ids) {
+		StringBuilder builder = new StringBuilder();
+		int length = ids.size();
+		for( int i = 0; i< length; i++){
+			builder.append(" ?");
+			if(i != length -1) builder.append(",");
+		}
+		return builder.toString();
 	}
+
+	private void addToPreparedStatement(List<Object> preparedStmtList,Set<String> ids)
+	{ ids.forEach(id ->{ preparedStmtList.add(id);});
+	}
+
+
 }
