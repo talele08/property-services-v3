@@ -1,0 +1,146 @@
+{
+  "RequestInfo": {
+    "apiId": "Rainmaker",
+    "action": "",
+    "did": 1,
+    "key": "",
+    "msgId": "20170310130900|en_IN",
+    "requesterId": "",
+    "ts": 0,
+    "ver": ".01",
+    "authToken": "77978373-de5f-449a-835a-0019059bd44e"
+  },
+  "Properties": [
+    {
+      "tenantId": "pb.amritsar",
+      "status": null,
+      "address": {
+        "latitude": 31.326,
+        "longitude": 75.5762,
+        "addressNumber": null,
+        "type": "CITIZEN",
+        "addressLine1": "Main Phase",
+        "addressLine2": "Main Street",
+        "landmark": "Near Market",
+        "city": "Jalandhar",
+        "pincode": "555444",
+        "detail": null,
+        "doorNo": "123",
+        "buildingName": "Mohalla",
+        "street": "Main Road",
+        "locality": {
+          "code": "PNB",
+          "area": "Area1"
+        }
+      },
+      "oldPropertyId": null,
+      "creationReason": "NEWPROPERTY",
+      "occupancyDate": null,
+      "propertyDetails": [
+        {
+          "institution": null,
+          "tenantId": "pb.amritsar",
+          "citizenInfo": {
+            "isPrimaryOwner": null,
+            "ownerShipPercentage": null,
+            "ownerType": null,
+            "documents": null,
+            "relationship": null,
+            "userName": "7975179334",
+            "name": "Manjunath",
+            "gender": null,
+            "mobileNumber": "7975179334",
+            "emailId": "Citizen@ulb.in",
+            "permanentAddress": null,
+            "permanentCity": null,
+            "permanentPinCode": null,
+            "correspondenceCity": null,
+            "correspondencePinCode": null,
+            "correspondenceAddress": null,
+            "active": true,
+            "dob": null,
+            "type": "CITIZEN",
+            "roles": [
+              {
+                "id": 281,
+                "name": "Citizen",
+                "code": "CITIZEN",
+                "tenantId": "pb"
+              }
+            ],
+            "tenantId": "pb"
+          },
+          "source": null,
+          "usage": null,
+          "noOfFloors": 2,
+          "landArea": 60,
+          "buildUpArea": 60,
+          "units": [
+            {
+              "tenantId": "pb.amritsar",
+              "floorNo": "0",
+              "unitType": null,
+              "unitArea": 60,
+              "usageCategoryMajor": "RESIDENTIAL",
+              "usageCategoryMinor": "RESIDENTIAL",
+              "usageCategorySubMinor": "RESIDENTIAL",
+              "usageCategoryDetail": "RESIDENTIAL",
+              "ownerShipCategory": "INDIVIDUAL",
+              "occupancyDate": 0,
+              "constructionType": null,
+              "constructionSubType": null,
+              "arv": null
+            }
+          ],
+          "financialYear": "2018-19",
+          "propertyType": "BUILTUP",
+          "propertySubType": "INDEPENDENTPROPERTY",
+          "usageCategoryMajor": "RESIDENTIAL",
+          "usageCategoryMinor": "RESIDENTIAL",
+          "usageCategorySubMinor": "RESIDENTIAL",
+          "usageCategoryDetail": "RESIDENTIAL",
+          "ownerShipCategory": "INDIVIDUAL",
+          "subOwnerShipCategory": "SINGLEOWNER",
+          "adhocExemption": null,
+          "adhocPenalty": null,
+          "adhocExemptionReason": null,
+          "adhocPenaltyReason": null,
+          "owners": [
+            {
+              "isPrimaryOwner": true,
+              "ownerShipPercentage": 100,
+              "ownerType": "NONE",
+              "relationship": null,
+              "name": "Ranjeeth",
+              "gender": "MALE",
+              "mobileNumber": "7975179334",
+              "emailId": "ranjeeth@egov.org",
+              "permanentAddress": "#247, Chichuraganapalli - Thindlu Road, Heritage County",
+              "permanentCity": null,
+              "permanentPinCode": null,
+              "correspondenceCity": null,
+              "correspondencePinCode": null,
+              "correspondenceAddress": null,
+              "active": true,
+              "dob": null,
+              "pwdExpiryDate": 1540808763000,
+              "locale": null,
+              "type": "CITIZEN",
+              "roles": [
+                {
+                  "id": 281,
+                  "name": "Citizen",
+                  "code": "CITIZEN",
+                  "tenantId": "pb"
+                }
+              ],
+              "tenantId": "pb"
+            }
+          ],
+          "calculation": null,
+          "channel": null
+        }
+      ]
+    }
+  ]
+}

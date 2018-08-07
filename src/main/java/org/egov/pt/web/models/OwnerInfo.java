@@ -175,8 +175,6 @@ public class OwnerInfo extends User  {
                 if (!super.equals(o)) return false;
 
                 User user = (User) o;
-                System.out.println(user.getUuid());
-                System.out.println(user.getUuid());
 
                 return Objects.equals(this.getUuid(), user.getUuid()) &&
                         Objects.equals(this.getName(), user.getName()) &&

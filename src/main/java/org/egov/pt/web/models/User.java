@@ -43,11 +43,10 @@ public class User   {
         private String salutation;
 
         @NotNull
-        @Pattern(regexp = "[a-z-A-Z]*", message = "Name has invalid characters")
+        @Pattern(regexp = "[a-z-A-Z' ']*", message = "Name has invalid characters")
         @JsonProperty("name")
         private String name;
 
-        @NotNull
         @JsonProperty("gender")
         private String gender;
 
@@ -69,7 +68,6 @@ public class User   {
         @JsonProperty("aadhaarNumber")
         private String aadhaarNumber;
 
-        @NotNull
         @JsonProperty("permanentAddress")
         private String permanentAddress;
 
@@ -113,7 +111,6 @@ public class User   {
         @Valid
         private List<Role> roles;
 
-        @NotNull
         @JsonProperty("fatherOrHusbandName")
         private String fatherOrHusbandName;
 

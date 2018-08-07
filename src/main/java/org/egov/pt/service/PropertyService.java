@@ -37,6 +37,9 @@ public class PropertyService {
 	@Autowired
 	private UserService userService;
 
+	@Autowired
+	private CalculationService calculationService;
+
 
 
 	/**
@@ -46,9 +49,10 @@ public class PropertyService {
 	 */
 	public List<Property> createProperty(PropertyRequest request) {
 		propertyValidator.validateCreateRequest(request);
-		userService.createUser(request);
 		enrichmentService.enrichCreateRequest(request,false);
+		userService.createUser(request);
 		userService.createCitizen(request);
+	//	calculationService.calculateTax(request);
 		producer.push(config.getSavePropertyTopic(), request);
 		return request.getProperties();
 	}
@@ -67,13 +71,16 @@ public class PropertyService {
 			if(userDetailResponse.getUser().size()==0){
 				return Collections.emptyList();
 			}
+			// Add the user uuid to search property
 			enrichmentService.enrichPropertyCriteriaWithOwnerids(criteria,userDetailResponse);
 			properties = repository.getProperties(criteria);
 			// If property not found with given propertyId or oldPropertyId or address fields return empty list
 			if(properties.size()==0){
 				return Collections.emptyList();
 			}
+			// Add propertyIds of all properties owned by the user
 			criteria=enrichmentService.getPropertyCriteriaFromPropertyIds(properties);
+			//Get all properties with ownerInfo enriched from user service
 			properties = getPropertiesWithOwnerInfo(criteria,requestInfo);
 		}
 		else{
@@ -107,6 +114,7 @@ public class PropertyService {
 
 		enrichmentService.enrichCreateRequest(request,true);
 		userService.createUser(request);
+		//calculationService.calculateTax(request);
 		producer.push(config.getUpdatePropertyTopic(), request);
 		return request.getProperties();
 	}

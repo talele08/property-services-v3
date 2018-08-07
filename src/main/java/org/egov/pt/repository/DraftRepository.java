@@ -1,15 +1,16 @@
 package org.egov.pt.repository;
 
-import java.util.List;
-
+import lombok.extern.slf4j.Slf4j;
 import org.egov.pt.repository.builder.DraftsQueryBuilder;
 import org.egov.pt.repository.rowmapper.DraftsRowMapper;
 import org.egov.pt.web.models.Draft;
+import org.egov.pt.web.models.DraftSearchCriteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
 
 @Repository
 @Slf4j
@@ -19,14 +20,16 @@ public class DraftRepository {
 	private DraftsQueryBuilder draftsQueryBuilder;
 	
 	@Autowired
-	private DraftsRowMapper draftsRowMapper;
-	
-	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	public List<Draft> getDrafts(String userId, String tenantId){
-		String query = draftsQueryBuilder.getDraftsSearchQuery(tenantId, userId);
-		log.info("Query: "+query);
-		return jdbcTemplate.query(query, draftsRowMapper);
+	@Autowired
+	private DraftsRowMapper draftsRowMapper;
+
+	public List<Draft> getDrafts(DraftSearchCriteria searchCriteria) {
+		List<Object> prprStmtList = new ArrayList<>();
+		String query = draftsQueryBuilder.getDraftsSearchQuery(searchCriteria, prprStmtList);
+		log.debug("Query: "+query);
+		List<Draft> obj = jdbcTemplate.query(query,prprStmtList.toArray(), draftsRowMapper);
+		return obj;
 	}
 }

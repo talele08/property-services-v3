@@ -35,6 +35,13 @@ public class PTConstants {
 
     public static final String MDMS_PT_FINANCIALYEAR = "FinancialYear";
 
+    public static final String MODULE = "pt-services-v2";
+
+    public static final String NOTIFICATION_LOCALE = "en_IN";
+
+    public static final String NOTIFICATION_CREATE_CODE = "pt.property.en.create";
+
+
 
 
 

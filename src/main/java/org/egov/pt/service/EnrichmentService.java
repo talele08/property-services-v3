@@ -24,6 +24,9 @@ public class EnrichmentService {
     IdGenRepository idGenRepository;
 
     @Autowired
+    BoundaryService boundaryService;
+
+    @Autowired
     private PropertyConfiguration config;
 
 
@@ -50,14 +53,14 @@ public class EnrichmentService {
                 {
                     propertyDetail.setTenantId(property.getTenantId());
                     propertyDetail.setAuditDetails(assessmentAuditDetails);
+                    propertyDetail.setAssessmentDate(System.currentTimeMillis());
                     if(!CollectionUtils.isEmpty(propertyDetail.getUnits()))
                         propertyDetail.getUnits().forEach(unit -> {
                             unit.setId(UUID.randomUUID().toString());
                             unit.setTenantId(property.getTenantId());});
                     if( propertyDetail.getDocuments()!=null)
                         propertyDetail.getDocuments().forEach(document -> document.setId(UUID.randomUUID().toString()));
-                    propertyDetail.setAssessmentDate(System.currentTimeMillis());
-                    if(propertyDetail.getSubOwnershipCategory().equals("INSTITUTIONAL"))
+                    if(propertyDetail.getOwnershipCategory().contains("INSTITUTIONAL"))
                     { propertyDetail.getInstitution().setId(UUID.randomUUID().toString());
                         propertyDetail.getInstitution().setTenantId(property.getTenantId());
                         propertyDetail.getOwners().forEach(owner -> {
@@ -75,6 +78,8 @@ public class EnrichmentService {
         }
         if(!onlyPropertyDetail)
             setIdgenIds(request);
+        boundaryService.getAreaType(request,"ADMIN");
+
     }
 
     /**
@@ -139,7 +144,12 @@ public class EnrichmentService {
      */
     private List<String> getIdList(RequestInfo requestInfo, String tenantId, String idKey,
                                    String idformat,int count) {
-        return idGenRepository.getId(requestInfo, tenantId, idKey, idformat,count).getIdResponses().stream()
+        List<IdResponse> idResponses = idGenRepository.getId(requestInfo, tenantId, idKey, idformat,count).getIdResponses();
+
+        if(CollectionUtils.isEmpty(idResponses))
+            throw new CustomException("IDGEN ERROR","No ids returned from idgen Service");
+
+        return idResponses.stream()
                 .map(IdResponse::getId).collect(Collectors.toList());
     }
 
@@ -208,8 +218,18 @@ public class EnrichmentService {
         users.forEach(user -> userIdToOwnerMap.put(user.getUuid(),user));
         properties.forEach(property -> {
             property.getPropertyDetails().forEach(propertyDetail ->
-            {propertyDetail.getOwners().forEach(owner -> owner.addUserDetail(userIdToOwnerMap.get(owner.getUuid())));
-                propertyDetail.getCitizenInfo().addCitizenDetail(userIdToOwnerMap.get(propertyDetail.getCitizenInfo().getUuid()));
+            {
+                propertyDetail.getOwners().forEach(owner -> {
+                    if(userIdToOwnerMap.get(owner.getUuid())==null)
+                     throw new CustomException("OWNER SEARCH ERROR","The owner of the propertyDetail "+propertyDetail.getAssessmentNumber()+" is not coming in user search");
+                    else
+                      owner.addUserDetail(userIdToOwnerMap.get(owner.getUuid()));
+
+                });
+                if(userIdToOwnerMap.get(propertyDetail.getCitizenInfo().getUuid())!=null)
+                  propertyDetail.getCitizenInfo().addCitizenDetail(userIdToOwnerMap.get(propertyDetail.getCitizenInfo().getUuid()));
+                else
+                    throw new CustomException("CITIZENINFO ERROR","The citizenInfo of property with id: "+property.getPropertyId()+" cannot be found");
             });
         });
     }

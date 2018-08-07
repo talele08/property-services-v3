@@ -35,7 +35,8 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 
 			if (null == currentProperty) {
 
-				Boundary locality = Boundary.builder().code(rs.getString("locality")).build();
+				Boundary locality = Boundary.builder().code(rs.getString("locality"))
+						            .build();
 
 				/*
 				 * id of the address table is being fetched as address key to avoid confusion
@@ -116,7 +117,9 @@ public class PropertyRowMapper implements ResultSetExtractor<List<Property>> {
 					.subOwnershipCategory(rs.getString("subOwnershipCategory"))
 					.usageCategoryMajor(rs.getString("usageCategoryMajor"))
 					.adhocExemption(rs.getBigDecimal("adhocExemption"))
+					.adhocExemptionReason(rs.getString("adhocExemptionReason"))
 					.adhocPenalty(rs.getBigDecimal("adhocPenalty"))
+					.adhocPenaltyReason(rs.getString("adhocPenaltyReason"))
 					.tenantId(rs.getString("tenantid"))
 					.institution(institution)
 					.citizenInfo(citizenInfo)

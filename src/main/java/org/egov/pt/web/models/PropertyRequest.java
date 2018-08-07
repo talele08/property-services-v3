@@ -28,6 +28,7 @@ import io.swagger.annotations.ApiModel;
 @NoArgsConstructor
 @Builder
 public class PropertyRequest   {
+        @NotNull
         @JsonProperty("RequestInfo")
         private RequestInfo requestInfo;
 

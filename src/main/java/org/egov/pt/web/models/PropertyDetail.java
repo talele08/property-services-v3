@@ -106,6 +106,7 @@ public class PropertyDetail   {
         @JsonProperty("additionalDetails")
         private Object additionalDetails;
 
+        @NotNull
         @JsonProperty("financialYear")
         private String financialYear;
 
@@ -136,6 +137,12 @@ public class PropertyDetail   {
         @JsonProperty("adhocPenalty")
         private BigDecimal adhocPenalty;
 
+        @JsonProperty("adhocExemptionReason")
+        private String adhocExemptionReason;
+
+        @JsonProperty("adhocPenaltyReason")
+        private String adhocPenaltyReason;
+
         @JsonProperty("owners")
         @Valid
         @NotNull
@@ -145,6 +152,9 @@ public class PropertyDetail   {
 
         @JsonProperty("auditDetails")
         private AuditDetails auditDetails;
+
+        @JsonProperty("calculation")
+        private Calculation calculation;
 
 
 
