@@ -37,7 +37,11 @@ public class BoundaryService {
     @Autowired
     private ObjectMapper mapper;
 
-
+    /**
+     *  Enriches the locality object by calling the location service
+     * @param request PropertyRequest for create
+     * @param hierarchyTypeCode HierarchyTypeCode of the boundaries
+     */
     public void getAreaType(PropertyRequest request,String hierarchyTypeCode){
         String tenantId = request.getProperties().get(0).getTenantId();
 
@@ -50,12 +54,9 @@ public class BoundaryService {
 
         StringBuilder uri = new StringBuilder(locationHost);
         uri.append(locationContextPath).append(locationEndpoint);
-
         uri.append("?").append("tenantId=").append(tenantId);
-
         if(hierarchyTypeCode!=null)
             uri.append("&").append("hierarchyTypeCode=").append(hierarchyTypeCode);
-
         uri.append("&").append("boundaryType=").append("Locality");
 
         if(!CollectionUtils.isEmpty(localities)) {
@@ -94,8 +95,11 @@ public class BoundaryService {
     }
 
 
-
-
+    /**
+     *  Prepares map of propertyId to jsonpath which contains the code of the property
+     * @param request PropertyRequest for create
+     * @return Map of propertyId to jsonPath with properties locality code
+     */
     private Map<String,String> getJsonpath(PropertyRequest request){
         Map<String,String> propertyIdToJsonPath = new LinkedHashMap<>();
         StringBuilder initialString = new StringBuilder("$..boundary[?(@.code==\"");

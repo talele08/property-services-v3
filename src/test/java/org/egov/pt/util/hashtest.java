@@ -28,7 +28,7 @@ public class hashtest {
         String message = JsonPath.parse(jsonString).read("$.messages[0].message");*/
 
 
-        String tenantId = "pb.amritsar";
+        String tenantId = "pb";
         tenantId = tenantId.split("\\.")[0];
         System.out.println(tenantId);
 
