@@ -29,6 +29,7 @@ public class DraftRepository {
 		List<Object> prprStmtList = new ArrayList<>();
 		String query = draftsQueryBuilder.getDraftsSearchQuery(searchCriteria, prprStmtList);
 		log.debug("Query: "+query);
+		log.debug("prprstmt: "+prprStmtList);
 		List<Draft> obj = jdbcTemplate.query(query,prprStmtList.toArray(), draftsRowMapper);
 		return obj;
 	}

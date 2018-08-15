@@ -39,7 +39,7 @@ public class PTConstants {
 
     public static final String JSONPATH_FINANCIALYEAR = "$.MdmsRes.egf-master";
 
-    public static final String BOUNDARY_HEIRARCHY_CODE = "ADMIN";
+    public static final String BOUNDARY_HEIRARCHY_CODE = "REVENUE";
 
     public static final String MODULE = "pt-services-v2";
 
@@ -53,6 +53,13 @@ public class PTConstants {
 
     public static final String NOTIFICATION_CITIZEN_URL = "www.egovernments.org/propertyTax";
 
+    public static final String NOTIFICATION_PAYMENT_ONLINE = "pt.payment.online";
+
+    public static final String NOTIFICATION_PAYMENT_OFFLINE = "pt.payment.offline";
+
+    public static final String NOTIFICATION_PAYMENT_FAIL = "pt.payment.fail";
+
+    public static final String NOTIFICATION_OLDPROPERTYID_ABSENT = "pt.oldpropertyid.absent";
 
 
 

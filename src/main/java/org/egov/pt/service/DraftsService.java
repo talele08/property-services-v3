@@ -53,10 +53,17 @@ public class DraftsService {
 	private void enrichDraftsForCreate(DraftRequest draftRequest) {
 		draftRequest.getDraft().setId(UUID.randomUUID().toString());
 		draftRequest.getDraft().setActive(true);
+		draftRequest.getDraft().setUserId(draftRequest.getRequestInfo().getUserInfo().getUuid());
+		draftRequest.getDraft().setTenantId(draftRequest.getRequestInfo().getUserInfo().getTenantId());
 		draftRequest.getDraft().setAuditDetails(propertyUtil.getAuditDetails(draftRequest.getRequestInfo().getUserInfo().getId().toString(), true));
 	}
 	
 	public DraftResponse updateDraft(DraftRequest draftRequest) {
+		DraftSearchCriteria criteria = DraftSearchCriteria.builder().id(draftRequest.getDraft().getId()).build();
+		DraftResponse response = searchDrafts(draftRequest.getRequestInfo(), criteria);
+		if(response.getDrafts().isEmpty()) {
+			throw new CustomException("INVALID_UPDATE_REQUEST", "Draft being updated doesn't belong to this user");
+		}
 		enrichDraftsForUpdate(draftRequest);
 		List<Draft> drafts = Collections.singletonList(draftRequest.getDraft());
 		producer.push(propertyConfiguration.getUpdateDraftsTopic(), draftRequest);
@@ -67,12 +74,16 @@ public class DraftsService {
 	private void enrichDraftsForUpdate(DraftRequest draftRequest) {
 		if (!isEmpty(draftRequest.getDraft().getAssessmentNumber()))
 			draftRequest.getDraft().setActive(false);
+		draftRequest.getDraft().setTenantId(draftRequest.getRequestInfo().getUserInfo().getTenantId());
 		draftRequest.getDraft().setAuditDetails(propertyUtil.getAuditDetails(draftRequest.getRequestInfo().getUserInfo().getId().toString(), false));
 	}
 
 	public DraftResponse searchDrafts(RequestInfo requestInfo, DraftSearchCriteria draftSearchCriteria) {
 		draftSearchCriteria.setOffset(draftSearchCriteria.getOffset() > 0 ? draftSearchCriteria.getOffset() : 0);
 		draftSearchCriteria.setLimit(draftSearchCriteria.getLimit() > 0 ? draftSearchCriteria.getLimit() : 5);
+		draftSearchCriteria.setUserId(requestInfo.getUserInfo().getUuid());
+		draftSearchCriteria.setTenantId(requestInfo.getUserInfo().getTenantId());
+		draftSearchCriteria.setActive(true);
 		List<Draft> drafts = null;
 
 		if (!isEmpty(draftSearchCriteria.getAssessmentNumber()))

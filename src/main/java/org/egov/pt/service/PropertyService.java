@@ -9,7 +9,6 @@ import org.egov.pt.repository.PropertyRepository;
 import org.egov.pt.util.ResponseInfoFactory;
 import org.egov.pt.validator.PropertyValidator;
 import org.egov.pt.web.models.*;
-import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +40,6 @@ public class PropertyService {
 	private CalculationService calculationService;
 
 
-
 	/**
 	 * Assign ids through enrichment and pushes to kafka
 	 * @param request PropertyRequest containing list of properties to be created
@@ -52,7 +50,7 @@ public class PropertyService {
 		enrichmentService.enrichCreateRequest(request,false);
 		userService.createUser(request);
 		userService.createCitizen(request);
-	//	calculationService.calculateTax(request);
+		//calculationService.calculateTax(request);
 		producer.push(config.getSavePropertyTopic(), request);
 		return request.getProperties();
 	}
@@ -63,7 +61,7 @@ public class PropertyService {
 	 * @param criteria PropertyCriteria containing fields on which search is based
 	 * @return list of properties satisfying the containing fields in criteria
 	 */
-	public List<Property> searchProperty(PropertyCriteria criteria,RequestInfo requestInfo) {
+		public List<Property> searchProperty(PropertyCriteria criteria,RequestInfo requestInfo) {
 		List<Property> properties;
 		if(criteria.getMobileNumber()!=null || criteria.getName()!=null)
 		{   UserDetailResponse userDetailResponse = userService.getUser(criteria,requestInfo);
@@ -114,8 +112,8 @@ public class PropertyService {
 		propertyValidator.validateUpdateRequest(request);
 		enrichmentService.enrichCreateRequest(request,true);
 		userService.createUser(request);
-		//calculationService.calculateTax(request);
-		enrichmentService.enrichAssessmentNumber(request);
+	//	calculationService.calculateTax(request);
+	//	enrichmentService.enrichAssessmentNumber(request);
 		producer.push(config.getUpdatePropertyTopic(), request);
 		return request.getProperties();
 	}
